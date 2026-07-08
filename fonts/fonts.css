@@ -1,0 +1,15 @@
+/* Noto Rashi Hebrew — פונט כתב רש״י אמיתי (OFL). ממופה לקודפוינטים עבריים רגילים. */
+@font-face {
+  font-family: "Rashi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("noto-rashi-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Rashi";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("noto-rashi-700.woff2") format("woff2");
+}

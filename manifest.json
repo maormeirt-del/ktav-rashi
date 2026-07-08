@@ -1,0 +1,16 @@
+{
+  "name": "לומדים כתב רש״י",
+  "short_name": "כתב רש״י",
+  "description": "מאפס עד קריאה שוטפת בכתב רש״י — משחקים, אותיות, ומסע ספרים.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3ecdd",
+  "theme_color": "#1c2a52",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
