@@ -1,15 +1,24 @@
-/* Noto Rashi Hebrew — פונט כתב רש״י אמיתי (OFL). ממופה לקודפוינטים עבריים רגילים. */
-@font-face {
-  font-family: "Rashi";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("noto-rashi-400.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Rashi";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("noto-rashi-700.woff2") format("woff2");
-}
+/* ===========================================================
+   fonts.css
+   - Rashi  = Noto Rashi Hebrew (OFL) — טקסט כתב רש״י
+   - Tel Aviv Modernist — כותרות/ממשק (רישיון אישי של מאור;
+     בפריסה ציבורית נשמט → נופל ל-Rubik)
+   - Heebo / Rubik (OFL) — גוף + fallback
+   =========================================================== */
+@font-face { font-family:"Rashi"; font-weight:400; font-display:swap; src:url("noto-rashi-400.woff2") format("woff2"); }
+@font-face { font-family:"Rashi"; font-weight:700; font-display:swap; src:url("noto-rashi-700.woff2") format("woff2"); }
+
+@font-face { font-family:"Tel Aviv"; font-weight:400; font-display:swap; src:url("tel-aviv-modernist-400.woff2") format("woff2"); }
+@font-face { font-family:"Tel Aviv"; font-weight:700; font-display:swap; src:url("tel-aviv-modernist-700.woff2") format("woff2"); }
+
+@font-face { font-family:"Heebo"; font-weight:400; font-display:swap; src:url("heebo-400.woff2") format("woff2"); }
+@font-face { font-family:"Heebo"; font-weight:500; font-display:swap; src:url("heebo-500.woff2") format("woff2"); }
+@font-face { font-family:"Heebo"; font-weight:700; font-display:swap; src:url("heebo-700.woff2") format("woff2"); }
+
+@font-face { font-family:"Rubik"; font-weight:400; font-display:swap; src:url("rubik-400.woff2") format("woff2"); }
+@font-face { font-family:"Rubik"; font-weight:500; font-display:swap; src:url("rubik-500.woff2") format("woff2"); }
+@font-face { font-family:"Rubik"; font-weight:700; font-display:swap; src:url("rubik-700.woff2") format("woff2"); }
+@font-face { font-family:"Rubik"; font-weight:900; font-display:swap; src:url("rubik-900.woff2") format("woff2"); }
+
+@font-face { font-family:"Frank Ruhl Libre"; font-weight:400; font-display:swap; src:url("frank-ruhl-libre-400.woff2") format("woff2"); }
+@font-face { font-family:"Frank Ruhl Libre"; font-weight:700; font-display:swap; src:url("frank-ruhl-libre-700.woff2") format("woff2"); }

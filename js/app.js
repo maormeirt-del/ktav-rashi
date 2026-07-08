@@ -9,8 +9,9 @@ window.App = (function () {
     if (!State.profile || !State.profile.name) return onboarding();
     const h = (location.hash || "").replace("#", "");
     if (h.indexOf("g/") === 0) { const [, wid, gid] = h.split("/"); const w = window.worldById(wid); const g = w && w.games.find(x => x.id === gid); if (g) return Games.play(g, w); }
+    if (h.indexOf("lib/") === 0) { const k = h.split("/")[1]; if (window.LIBRARY[k]) return libraryReader(k); }
     if (h && window.worldById(h)) return world(h);
-    if (["home", "shelf", "me"].includes(h)) return go(h);
+    if (["home", "beit", "shelf", "me"].includes(h)) return go(h);
     go("home");
   }
 
@@ -56,8 +57,89 @@ window.App = (function () {
   /* ---------------- מפת המסע (בית) ---------------- */
   function go(route) {
     if (route === "home") return home();
+    if (route === "beit") return beit();
     if (route === "shelf") return shelf();
     if (route === "me") return me();
+  }
+
+  /* ---------------- בֵּית הַמִּדְרָשׁ ---------------- */
+  const LIB_MAP = { chumash: "chumash", "mishna-brura": "halacha" };
+  function beit() {
+    const body = el("div", { class: "beitscr" });
+    body.appendChild(el("h2", { class: "map-title" }, ["בֵּית הַמִּדְרָשׁ"]));
+    body.appendChild(el("p", { class: "sub-lead" }, ["טֶקְסְט אֲמִתִּי בִּכְתָב רָשִׁ״י — פָּסוּק וְהַפֵּרוּשׁ, שֻׁלְחָן עָרוּךְ וּמִשְׁנָה בְּרוּרָה."]));
+    const cards = el("div", { class: "beit-cards" });
+    [
+      { kind: "chumash", icon: "📕", title: "חֻמָּשׁ עִם רָשִׁ״י", sub: "בְּרֵאשִׁית א׳ — פָּסוּק וּפֵרוּשׁ רָשִׁ״י", hue: 355 },
+      { kind: "halacha", icon: "📔", title: "שֻׁלְחָן עָרוּךְ + מִשְׁנָה בְּרוּרָה", sub: "אֹרַח חַיִּים סִימָן א׳–ב׳", hue: 210 }
+    ].forEach(c => cards.appendChild(
+      el("button", { class: "beit-card", style: `--hue:${c.hue}`, onclick: () => libraryReader(c.kind) }, [
+        el("span", { class: "bc-icon" }, [c.icon]),
+        el("span", { class: "bc-txt" }, [el("b", {}, [c.title]), el("small", {}, [c.sub])]),
+        el("span", { class: "bc-go" }, ["›"])
+      ])));
+    body.appendChild(cards);
+    UI.page("beit", body);
+    drain();
+  }
+
+  function libraryReader(kind) {
+    const data = window.LIBRARY[kind];
+    const daf = el("div", { class: "daf" });
+    const hero = el("div", { class: "daf-hero", style: `--hue:${kind === "chumash" ? 355 : 210}` }, [
+      el("button", { class: "back", onclick: () => go("beit") }, ["›"]),
+      el("span", { class: "dh-icon" }, [data.icon]),
+      el("h2", {}, [data.title]), el("p", {}, [data.sub])
+    ]);
+    // כפתור-רמז גלובלי: החלף כתב רש״י ↔ מרובע
+    let sq = false;
+    const toggle = el("button", { class: "sq-toggle", onclick: () => {
+      sq = !sq; daf.classList.toggle("show-square", sq);
+      toggle.textContent = sq ? "✏️ חֲזֹר לְרָשִׁ״י" : "🔤 הַצֵּג מְרֻבָּע";
+    } }, ["🔤 הַצֵּג מְרֻבָּע"]);
+
+    const scroll = el("div", { class: "daf-scroll" });
+    if (kind === "chumash") data.units.forEach(u => scroll.appendChild(chumashUnit(u)));
+    else data.simanim.forEach(s => scroll.appendChild(halachaSiman(s)));
+
+    UI.setScreen(el("div", { class: "page daf-page" }, [hero, el("div", { class: "daf-tools" }, [toggle]), daf.appendChild(scroll) && daf, UI.nav("beit")]));
+  }
+
+  function rashiTxt(s) {   // כתב רש״י לא-מנוקד, מתחלף למרובע ע״י .show-square
+    const span = el("span", { class: "rt" });
+    span.innerHTML = window.stripNikud(s);
+    return span;
+  }
+  function chumashUnit(u) {
+    const box = el("div", { class: "unit" });
+    box.appendChild(el("div", { class: "unit-ref" }, [u.ref]));
+    box.appendChild(el("div", { class: "pasuk", onclick: () => Audio2.speak(window.stripNikud(u.pasuk), 0.85) }, [u.pasuk]));
+    u.rashi.forEach(r => {
+      box.appendChild(el("div", { class: "rashi-block" }, [
+        el("span", { class: "rlabel" }, ["רש״י"]),
+        el("b", { class: "dibur rt" }, [window.stripNikud(r.d)]),
+        rashiTxt(" — " + r.t)
+      ]));
+    });
+    return box;
+  }
+  function halachaSiman(s) {
+    const box = el("div", { class: "siman" });
+    box.appendChild(el("div", { class: "siman-head" }, [`סִימָן ${s.n} · ${s.title}`]));
+    s.seifim.forEach(sf => {
+      const seif = el("div", { class: "seif" }, [
+        el("div", { class: "sa-line" }, [ el("span", { class: "seif-n" }, [String(sf.n)]), el("span", { class: "sa-txt" }, [sf.sa]) ])
+      ]);
+      if (sf.mb && sf.mb.length) {
+        const mb = el("div", { class: "mb-wrap" }, [ el("span", { class: "mb-label" }, ["מִשְׁנָה בְּרוּרָה"]) ]);
+        sf.mb.forEach(m => mb.appendChild(el("div", { class: "mb-note" }, [
+          el("span", { class: "mb-n rt" }, [`(${window.stripNikud(m.n)})`]), rashiTxt(" " + m.t)
+        ])));
+        seif.appendChild(mb);
+      }
+      box.appendChild(seif);
+    });
+    return box;
   }
 
   function home() {
@@ -129,7 +211,7 @@ window.App = (function () {
     body.appendChild(el("p", { class: "sub-lead" }, ["כָּל סֵפֶר נִפְתָּח כְּשֶׁתְּסַיֵּם עוֹלָם — וְאָז אֶפְשָׁר לִקְרֹא בּוֹ בֶּאֱמֶת."]));
     const grid = el("div", { class: "shelf" });
     State.seforimState().forEach(s => {
-      const card = el("button", { class: "book" + (s.unlocked ? "" : " locked"), onclick: () => s.unlocked ? reader(s) : UI.toast("סַיֵּם עוֹד עוֹלָם כְּדֵי לִפְתֹּחַ 🔒") }, [
+      const card = el("button", { class: "book" + (s.unlocked ? "" : " locked"), onclick: () => s.unlocked ? openBook(s) : UI.toast("סַיֵּם עוֹד עוֹלָם כְּדֵי לִפְתֹּחַ 🔒") }, [
         el("div", { class: "book-icon" }, [s.unlocked ? s.icon : "🔒"]),
         el("div", { class: "book-name" }, [s.name]),
         s.opened ? el("span", { class: "book-badge" }, ["נִקְרָא ✓"]) : (s.unlocked ? el("span", { class: "book-badge new" }, ["חָדָשׁ!"]) : null)
@@ -139,6 +221,11 @@ window.App = (function () {
     body.appendChild(grid);
     UI.page("shelf", body);
     drain();
+  }
+  function openBook(s) {
+    State.openSefer(s.id, true);
+    if (LIB_MAP[s.id]) return libraryReader(LIB_MAP[s.id]);
+    reader(s);
   }
   function reader(s) {
     State.openSefer(s.id, true);

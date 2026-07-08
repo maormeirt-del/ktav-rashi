@@ -8,6 +8,8 @@
   --maxw: 520px;
   --radius: 18px;
   --nav-h: 64px;
+  --font-display: "Tel Aviv", "Rubik", system-ui, sans-serif;
+  --font-sans: "Heebo", "Rubik", system-ui, sans-serif;
 }
 /* ---- סקין ילד ---- */
 html[data-mode="kid"] {
@@ -23,7 +25,7 @@ html[data-mode="adult"] {
 }
 html, body { height: 100%; }
 body {
-  font-family: system-ui, "Segoe UI", "Rubik", Arial, sans-serif;
+  font-family: var(--font-sans);
   color: var(--ink);
   background: linear-gradient(160deg, var(--bg1), var(--bg2));
   background-attachment: fixed;
@@ -31,8 +33,11 @@ body {
 }
 #app { max-width: var(--maxw); margin: 0 auto; min-height: 100%; position: relative; }
 #screen { min-height: 100vh; }
+h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-title,
+.me-rank, .reward-name, .reward-title, .book-name, .onb-logo h1, .beit-card b, .bc-txt b,
+.daf-hero h2, .siman-head, .navbtn { font-family: var(--font-display); font-weight: 700; }
 .rashi  { font-family: "Rashi"; }
-.square { font-family: system-ui, "Times New Roman", serif; }
+.square { font-family: var(--font-sans), "Times New Roman", serif; }
 
 /* ---------- כפתורים ---------- */
 .btn { font: inherit; font-weight: 700; border: 0; border-radius: 14px; padding: 12px 20px;
@@ -278,3 +283,54 @@ body {
 @keyframes fall { to { transform: translateY(105vh) rotate(360deg); opacity: 0; } }
 
 @media (min-width: 460px) { .big-letter { font-size: 7rem; } }
+
+/* ============ בֵּית הַמִּדְרָשׁ ============ */
+.beit-cards { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+.beit-card { display: flex; align-items: center; gap: 14px; text-align: right; width: 100%;
+  background: var(--card); border: 2px solid var(--line); border-radius: 20px; padding: 18px; cursor: pointer; box-shadow: var(--shadow);
+  border-inline-start: 6px solid hsl(var(--hue), 60%, 52%); transition: transform .12s; }
+.beit-card:active { transform: scale(.98); }
+.bc-icon { font-size: 2.6rem; }
+.bc-txt { flex: 1; min-width: 0; }
+.bc-txt b { font-size: 1.12rem; display: block; }
+.bc-txt small { color: var(--muted); font-size: .82rem; }
+.bc-go { font-size: 1.5rem; color: var(--muted); }
+
+.daf-page { padding: 0 0 calc(var(--nav-h) + 10px); }
+.daf-hero { position: relative; text-align: center; color: #fff; padding: 24px 18px 20px;
+  background: linear-gradient(160deg, hsl(var(--hue),55%,52%), hsl(var(--hue),50%,38%)); box-shadow: var(--shadow); }
+.daf-hero .dh-icon { font-size: 2.4rem; }
+.daf-hero h2 { margin-top: 2px; }
+.daf-hero p { opacity: .9; font-size: .85rem; }
+.daf-tools { display: flex; justify-content: center; padding: 12px 14px 4px; }
+.sq-toggle { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 9px 18px;
+  background: var(--card); color: var(--ink); box-shadow: var(--shadow); cursor: pointer; font-size: .88rem; }
+.daf-scroll { padding: 8px 14px; }
+
+/* --- חומש --- */
+.unit { background: var(--card); border-radius: 18px; padding: 16px 16px 8px; margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.unit-ref { font-family: var(--font-display); font-weight: 700; color: var(--gold); font-size: .82rem; margin-bottom: 8px; text-align: center; }
+.pasuk { font-family: "Frank Ruhl Libre", Georgia, "Times New Roman", serif; font-size: 1.5rem; line-height: 2.05;
+  text-align: center; color: var(--ink); background: linear-gradient(hsla(var(--gold-h,42),70%,60%,.08), transparent);
+  border-radius: 12px; padding: 10px 8px; cursor: pointer; }
+.rashi-block { position: relative; margin: 12px 4px 4px; padding: 10px 12px; background: var(--bg1); border-radius: 12px; border-inline-start: 3px solid var(--gold); }
+.rlabel { display: inline-block; font-family: var(--font-display); font-weight: 700; font-size: .62rem; color: #fff; background: var(--accent);
+  border-radius: 6px; padding: 1px 7px; vertical-align: middle; margin-inline-end: 6px; }
+.dibur { font-weight: 700; }
+.rt { font-family: "Rashi"; font-size: 1.5rem; line-height: 2; color: var(--ink); }
+.daf.show-square .rt { font-family: var(--font-sans) !important; font-size: 1.15rem; line-height: 1.8; }
+
+/* --- שולחן ערוך + משנה ברורה --- */
+.siman { margin-bottom: 18px; }
+.siman-head { font-family: var(--font-display); font-weight: 700; text-align: center; color: #fff;
+  background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: 12px; padding: 9px 12px; margin: 6px 0 12px; font-size: 1rem; }
+.seif { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.sa-line { display: flex; gap: 10px; align-items: flex-start; }
+.seif-n { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: .82rem; }
+.sa-txt { font-family: "Frank Ruhl Libre", Georgia, serif; font-size: 1.16rem; line-height: 1.7; font-weight: 500; color: var(--ink); }
+.mb-wrap { margin: 12px 0 2px; padding: 10px 12px; background: var(--bg1); border-radius: 12px; border-inline-start: 3px solid var(--gold); }
+.mb-label { display: inline-block; font-family: var(--font-display); font-weight: 700; font-size: .6rem; color: #fff; background: var(--gold); border-radius: 6px; padding: 1px 7px; margin-bottom: 6px; }
+.mb-note { margin-top: 4px; }
+.mb-n { color: var(--accent); font-weight: 700; }
+
