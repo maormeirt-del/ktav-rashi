@@ -191,37 +191,41 @@ window.Games = (function () {
     }
   }
 
-  /* --- 4. הַתְאָמָה: רָשִׁ״י ↔ מְרֻבָּע (זיכרון) --- */
+  /* --- 4. הַתְאָמָה: רָשִׁ״י ↔ מְרֻבָּע --- */
   function match(game, world) {
     frame(game, world, (body) => {
       const chars = pick(poolChars(game.pool), 5);
-      body.appendChild(el("p", { class: "lead" }, ["הַתְאֵם כָּל אוֹת רָשִׁ״י לַתְּאוֹמָה הַמְּרֻבַּעַת שֶׁלָּהּ."]));
+      body.appendChild(el("p", { class: "lead dim" }, ["לַחַץ עַל אוֹת רָשִׁ״י, וְאָז עַל הַתְּאוֹמָה הַמְּרֻבַּעַת שֶׁלָּהּ."]));
       const rCol = el("div", { class: "mcol" }), sCol = el("div", { class: "mcol" });
-      shuffle(chars).forEach(c => rCol.appendChild(el("button", { class: "mtile rashi-tile", "data-c": c, onclick: () => tap("r", c, event.currentTarget) }, [rashi(c)])));
-      shuffle(chars).forEach(c => sCol.appendChild(el("button", { class: "mtile", "data-c": c, onclick: () => tap("s", c, event.currentTarget) }, [square(c)])));
-      body.appendChild(el("div", { class: "match-grid" }, [rCol, sCol]));
-      const status = el("div", { class: "tip" }); body.appendChild(status);
+      const status = el("div", { class: "tip" });
       let sel = null, matched = 0;
-      window.tap = null;
+
+      function tile(c, side) {
+        const t = el("button", { class: "mtile" + (side === "r" ? " rashi-tile" : "") }, [side === "r" ? rashi(c) : square(c)]);
+        t.addEventListener("click", () => tap(side, c, t));   // מאזין יחיד — בלי כפילות
+        return t;
+      }
+      shuffle(chars).forEach(c => rCol.appendChild(tile(c, "r")));
+      shuffle(chars).forEach(c => sCol.appendChild(tile(c, "s")));
+      body.appendChild(el("div", { class: "match-grid" }, [rCol, sCol]));
+      body.appendChild(status);
+
       function tap(side, c, btn) {
         if (btn.classList.contains("gone")) return;
         Audio2.sfx.tap();
-        if (!sel) { sel = { side, c, btn }; btn.classList.add("sel"); return; }
-        if (sel.btn === btn) { btn.classList.remove("sel"); sel = null; return; }
+        if (!sel) { sel = { side, c, btn }; btn.classList.add("sel"); status.textContent = "עַכְשָׁו לַחַץ עַל הַתְּאוֹמָה שֶׁלָּהּ ↔"; return; }
+        if (sel.btn === btn) { btn.classList.remove("sel"); sel = null; status.textContent = ""; return; }
         if (sel.side !== side && sel.c === c) {
           [sel.btn, btn].forEach(b => { b.classList.remove("sel"); b.classList.add("gone"); });
           Audio2.sfx.correct(); Audio2.speak(NAME(c)); State.recordResult(c, true);
-          matched++; sel = null;
+          matched++; sel = null; status.textContent = "";
           if (matched === chars.length) { status.textContent = "כָּל הַכָּבוֹד!"; setTimeout(() => finish(game, world, chars.length, chars.length), 600); }
         } else {
           const bad = [sel.btn, btn]; bad.forEach(b => b.classList.add("shake"));
-          Audio2.sfx.wrong(); const s = sel; sel = null;
-          setTimeout(() => bad.forEach(b => { b.classList.remove("shake", "sel"); }), 500);
+          Audio2.sfx.wrong(); sel.btn.classList.remove("sel"); sel = null; status.textContent = "";
+          setTimeout(() => bad.forEach(b => b.classList.remove("shake")), 500);
         }
       }
-      // attach real handler (avoid global)
-      [...rCol.children].forEach(b => b.onclick = () => tap("r", b.getAttribute("data-c"), b));
-      [...sCol.children].forEach(b => b.onclick = () => tap("s", b.getAttribute("data-c"), b));
     });
   }
 
