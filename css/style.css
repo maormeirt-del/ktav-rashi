@@ -334,3 +334,65 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .mb-note { margin-top: 4px; }
 .mb-n { color: var(--accent); font-weight: 700; }
 
+/* ============ אולם המשחקים ============ */
+.hall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.hgame { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 16px 12px; box-shadow: var(--shadow); cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; transition: transform .12s; }
+.hgame:active { transform: scale(.97); }
+.hgame.locked { opacity: .6; filter: grayscale(.5); }
+.hg-emoji { font-size: 2.4rem; }
+.hg-name { font-family: var(--font-display); font-weight: 700; font-size: .98rem; }
+.hg-tag { font-size: .72rem; font-weight: 700; color: var(--accent); background: var(--bg1); border-radius: 999px; padding: 3px 10px; }
+.hgame.locked .hg-tag { color: var(--muted); }
+.hg-bar { width: 80%; height: 5px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.hg-bar i { display: block; height: 100%; background: var(--gold); }
+
+/* מסגרת משחק */
+.mg { padding: 0 14px 20px; }
+.mg-body { padding-top: 8px; }
+.mg-status { text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin: 8px 0; min-height: 24px; }
+.mg-end { text-align: center; margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mg-end small { color: var(--accent); font-weight: 800; }
+.rules-rashi { padding: 14px; background: var(--bg1); border-radius: 14px; border-inline-start: 3px solid var(--gold); margin: 4px 0; }
+
+/* boards */
+.tic { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(80vw, 300px); margin: 10px auto; }
+.tic-c { aspect-ratio: 1; background: var(--card); border: 2px solid var(--line); border-radius: 14px; font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; cursor: pointer; box-shadow: var(--shadow); }
+.tic-c.X { color: var(--accent); } .tic-c.O { color: #3a7bd5; }
+
+.mem { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: min(94vw, 380px); margin: 10px auto; }
+.mem-c { aspect-ratio: .8; background: linear-gradient(145deg, var(--accent), var(--gold)); border: 0; border-radius: 12px; font-size: 1.9rem; cursor: pointer; box-shadow: var(--shadow); color: var(--ink); }
+.mem-c.o { background: var(--card); } .mem-c.m { background: #e9f9ef; }
+.mem-c .rashi { font-size: 1.9rem; } .mem-c .square { font-size: 1.4rem; }
+
+.slide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: min(88vw, 340px); margin: 10px auto; }
+.slide-c { aspect-ratio: 1; background: var(--accent); color: #fff; border: 0; border-radius: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; cursor: pointer; box-shadow: var(--shadow); }
+.slide-c.blank { background: transparent; box-shadow: none; pointer-events: none; }
+
+.g2048 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: min(88vw, 340px); margin: 10px auto; background: var(--line); padding: 8px; border-radius: 12px; }
+.cell2 { aspect-ratio: 1; border-radius: 8px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; background: rgba(150,130,90,.15); color: #5a4a2a; }
+.cell2.v0 { color: transparent; }
+.cell2.v2 { background: #eee4da; } .cell2.v4 { background: #ede0c8; }
+.cell2.v8 { background: #f2b179; color: #fff; } .cell2.v16 { background: #f59563; color: #fff; }
+.cell2.v32 { background: #f67c5f; color: #fff; } .cell2.v64 { background: #f65e3b; color: #fff; }
+.cell2.v128, .cell2.v256, .cell2.v512 { background: #edcf72; color: #fff; font-size: 1.25rem; }
+.cell2.v1024, .cell2.v2048 { background: #edc22e; color: #fff; font-size: 1.1rem; }
+.g2048-pad { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+.pad-row { display: flex; gap: 8px; }
+.padbtn { width: 60px; height: 46px; border: 0; border-radius: 12px; background: var(--card); box-shadow: var(--shadow); font-size: 1.3rem; cursor: pointer; color: var(--ink); }
+
+.c4 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; width: min(96vw, 400px); margin: 10px auto; background: #2b4a8b; padding: 7px; border-radius: 12px; }
+.c4-c { aspect-ratio: 1; border-radius: 50%; border: 0; background: #dfe7f5; cursor: pointer; }
+.c4-c.r { background: #e0463e; } .c4-c.y { background: #f4c430; }
+
+.checkers, .chess { display: grid; grid-template-columns: repeat(8, 1fr); width: min(96vw, 440px); aspect-ratio: 1; margin: 10px auto; border: 3px solid var(--ink); border-radius: 6px; overflow: hidden; }
+.ck-c, .ch-c { aspect-ratio: 1; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; }
+.ck-c.light, .ch-c.light { background: #f0d9b5; } .ck-c.dark, .ch-c.dark { background: #b58863; }
+.ck-c.sel, .ch-c.sel { box-shadow: inset 0 0 0 3px #f4c430; }
+.ck-c.hint, .ch-c.hint { box-shadow: inset 0 0 0 4px rgba(46,164,99,.6); }
+.ck-p { font-size: 1.7rem; line-height: 1; }
+.ck-p.wp { color: #f7f2e7; text-shadow: 0 1px 2px rgba(0,0,0,.5); } .ck-p.bp { color: #1e1e1e; }
+.ck-p.kg { color: #f4c430; }
+.ch-p { font-size: 2rem; line-height: 1; }
+.ch-p.wp { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.55); } .ch-p.bp { color: #1a1a1a; }
+@media (min-width: 420px) { .ck-p { font-size: 2.1rem; } .ch-p { font-size: 2.4rem; } }
+

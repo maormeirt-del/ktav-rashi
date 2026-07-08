@@ -1,5 +1,5 @@
 /* Service Worker — אופליין מלא. אפס תלות ברשת אחרי טעינה ראשונה. */
-const CACHE = "rashi-v2";
+const CACHE = "rashi-v3";
 const ASSETS = [
   "./", "./index.html", "./manifest.json",
   "./css/style.css", "./fonts/fonts.css",
@@ -9,8 +9,8 @@ const ASSETS = [
   "./fonts/rubik-400.woff2", "./fonts/rubik-500.woff2", "./fonts/rubik-700.woff2", "./fonts/rubik-900.woff2",
   "./fonts/frank-ruhl-libre-400.woff2", "./fonts/frank-ruhl-libre-700.woff2",
   "./assets/icon.svg",
-  "./data/letters.js", "./data/words.js", "./data/passages.js", "./data/content.js", "./data/library.js",
-  "./js/state.js", "./js/audio.js", "./js/ui.js", "./js/games.js", "./js/app.js"
+  "./data/letters.js", "./data/words.js", "./data/passages.js", "./data/content.js", "./data/library.js", "./data/gamehall.js",
+  "./js/state.js", "./js/audio.js", "./js/ui.js", "./js/games.js", "./js/minigames.js", "./js/app.js"
 ];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

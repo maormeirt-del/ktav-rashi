@@ -110,7 +110,8 @@ window.UI = (function () {
   function nav(active) {
     const items = [
       { id: "home",  emoji: "🗺️", label: "מַסָּע" },
-      { id: "beit",  emoji: "📖", label: "בֵּית מִדְרָשׁ" },
+      { id: "beit",  emoji: "📖", label: "מִדְרָשׁ" },
+      { id: "games", emoji: "🎲", label: "מִשְׂחָקִים" },
       { id: "shelf", emoji: "📚", label: "אָרוֹן" },
       { id: "me",    emoji: "🏅", label: "הֶשֵּׂגִים" }
     ];

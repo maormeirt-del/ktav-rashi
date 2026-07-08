@@ -10,8 +10,9 @@ window.App = (function () {
     const h = (location.hash || "").replace("#", "");
     if (h.indexOf("g/") === 0) { const [, wid, gid] = h.split("/"); const w = window.worldById(wid); const g = w && w.games.find(x => x.id === gid); if (g) return Games.play(g, w); }
     if (h.indexOf("lib/") === 0) { const k = h.split("/")[1]; if (window.LIBRARY[k]) return libraryReader(k); }
+    if (h.indexOf("play/") === 0) { const id = h.split("/")[1]; if (window.GAMEHALL.some(g => g.id === id)) return GameHall.play(id); }
     if (h && window.worldById(h)) return world(h);
-    if (["home", "beit", "shelf", "me"].includes(h)) return go(h);
+    if (["home", "beit", "games", "shelf", "me"].includes(h)) return go(h);
     go("home");
   }
 
@@ -58,6 +59,7 @@ window.App = (function () {
   function go(route) {
     if (route === "home") return home();
     if (route === "beit") return beit();
+    if (route === "games") return GameHall.hall();
     if (route === "shelf") return shelf();
     if (route === "me") return me();
   }
