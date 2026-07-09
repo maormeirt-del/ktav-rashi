@@ -180,7 +180,7 @@ window.GameHall = (function () {
 
   /* ==================== 5. ארבע בשורה ==================== */
   function connect4(host) {
-    const C = 7, R = 6; let b = Array.from({ length: C }, () => []), over = false;
+    const C = 7, R = 6; let b = Array.from({ length: C }, () => []), over = false, thinking = false;
     const status = el("div", { class: "mg-status" }, ["תּוֹרְךָ (אָדֹם)"]); const grid = el("div", { class: "c4" });
     host.appendChild(status); host.appendChild(grid); render();
     function render() {
@@ -188,14 +188,43 @@ window.GameHall = (function () {
       for (let r = R - 1; r >= 0; r--) for (let c = 0; c < C; c++) { const v = b[c][r] || ""; const cell = el("button", { class: "c4-c" + (v ? " " + v : "") }, [""]); cell.onclick = () => drop(c); grid.appendChild(cell); }
     }
     function drop(c) {
-      if (over || b[c].length >= R) return; b[c].push("r"); Audio2.sfx.tap(); render();
+      if (over || thinking || b[c].length >= R) return; b[c].push("r"); Audio2.sfx.tap(); render();
       if (chk("r")) return end("r"); if (draw()) return end("draw");
-      const m = ai(); if (m > -1) b[m].push("y"); render();
-      if (chk("y")) return end("y"); if (draw()) return end("draw");
+      thinking = true; status.textContent = "הַמַּחְשֵׁב חוֹשֵׁב…";
+      setTimeout(() => {
+        const m = think(); if (m > -1) b[m].push("y"); render(); thinking = false;
+        if (chk("y")) return end("y"); if (draw()) return end("draw");
+        status.textContent = "תּוֹרְךָ (אָדֹם)";
+      }, 30);
     }
-    function ai() {
-      for (const p of ["y", "r"]) for (let c = 0; c < C; c++) if (b[c].length < R) { b[c].push(p); const w = chk(p); b[c].pop(); if (w) return c; }
-      for (const c of [3, 2, 4, 1, 5, 0, 6]) if (b[c].length < R) return c; return -1;
+    /* AI: minimax + alpha-beta (רואה קדימה → חוסם גם איום כפול) */
+    function think() {
+      const legal = moves(); if (!legal.length) return -1;
+      for (const c of legal) { b[c].push("y"); const w = chk("y"); b[c].pop(); if (w) return c; }   // נצח מיד
+      for (const c of legal) { b[c].push("r"); const w = chk("r"); b[c].pop(); if (w) return c; }   // חסום מיד
+      let best = -Infinity, mv = legal[0];
+      for (const c of legal) { b[c].push("y"); const s = negamax(4, -Infinity, Infinity, "r"); b[c].pop(); if (s > best) { best = s; mv = c; } }
+      return mv;
+    }
+    function moves() { const m = []; for (const c of [3, 2, 4, 1, 5, 0, 6]) if (b[c].length < R) m.push(c); return m; }
+    function negamax(depth, alpha, beta, turn) {
+      if (chk("y")) return 100000 + depth;
+      if (chk("r")) return -100000 - depth;
+      const legal = moves(); if (!legal.length || depth === 0) return heur();
+      if (turn === "y") { let v = -Infinity; for (const c of legal) { b[c].push("y"); v = Math.max(v, negamax(depth - 1, alpha, beta, "r")); b[c].pop(); alpha = Math.max(alpha, v); if (alpha >= beta) break; } return v; }
+      let v = Infinity; for (const c of legal) { b[c].push("r"); v = Math.min(v, negamax(depth - 1, alpha, beta, "y")); b[c].pop(); beta = Math.min(beta, v); if (alpha >= beta) break; } return v;
+    }
+    function heur() {
+      let s = 0; const at = (c, r) => (b[c] && b[c][r]) || "";
+      for (let r = 0; r < R; r++) { if (at(3, r) === "y") s += 3; else if (at(3, r) === "r") s -= 3; }
+      for (let c = 0; c < C; c++) for (let r = 0; r < R; r++) for (const [dc, dr] of [[1,0],[0,1],[1,1],[1,-1]]) {
+        let me = 0, op = 0, ok = true;
+        for (let k = 0; k < 4; k++) { const cc = c + dc * k, rr = r + dr * k; if (cc < 0 || cc >= C || rr < 0 || rr >= R) { ok = false; break; } const v = at(cc, rr); if (v === "y") me++; else if (v === "r") op++; }
+        if (!ok || (me && op)) continue;
+        if (me === 3) s += 50; else if (me === 2) s += 8; else if (me === 1) s += 1;
+        if (op === 3) s -= 60; else if (op === 2) s -= 10; else if (op === 1) s -= 1;
+      }
+      return s;
     }
     function chk(p) { const at = (c, r) => (b[c] && b[c][r]) || "";
       for (let c = 0; c < C; c++) for (let r = 0; r < R; r++) { if (at(c, r) !== p) continue; for (const [dc, dr] of [[1,0],[0,1],[1,1],[1,-1]]) { let k = 1; while (k < 4 && at(c + dc * k, r + dr * k) === p) k++; if (k === 4) return true; } } return false; }
