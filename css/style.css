@@ -404,9 +404,12 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .ck-p.wp { color: #f7f2e7; text-shadow: 0 1px 2px rgba(0,0,0,.5); } .ck-p.bp { color: #1e1e1e; }
 .ck-p.kg { color: #f4c430; }
 
-/* כלים "עומדים": counter-rotate כנגד הטיית הלוח + צל קרקע */
-.ch-p { display: inline-block; font-size: 2.5rem; line-height: 1; transform: rotateX(-46deg) translateY(-16%); transform-origin: 50% 92%; filter: drop-shadow(0 6px 3px rgba(0,0,0,.55)); }
-.ch-p.wp { color: #fdfaf3; text-shadow: 0 0 2px rgba(80,50,20,.7); }
-.ch-p.bp { color: #23201c; text-shadow: 0 0 1px rgba(0,0,0,.4); }
-@media (min-width: 420px) { .ck-p { font-size: 2.1rem; } .ch-p { font-size: 3rem; } }
+/* כלים "עומדים": counter-rotate כנגד הטיית הלוח + גוון עץ (Staunton) */
+.ch-p { display: inline-block; font-size: 2.6rem; line-height: 1; transform: rotateX(-46deg) translateY(-16%); transform-origin: 50% 92%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+.ch-p.wp { background-image: linear-gradient(155deg, #f8ead2 0%, #e8ca9d 40%, #cba066 78%, #a97f48 100%);
+  filter: drop-shadow(0 5px 2px rgba(0,0,0,.42)) drop-shadow(0 0 0.7px rgba(95,62,28,.95)); }
+.ch-p.bp { background-image: linear-gradient(155deg, #8f6942 0%, #63421f 46%, #3a2412 82%, #291708 100%);
+  filter: drop-shadow(0 5px 2px rgba(0,0,0,.5)) drop-shadow(0 0 0.6px rgba(20,12,4,.8)); }
+@media (min-width: 420px) { .ck-p { font-size: 2.1rem; } .ch-p { font-size: 3.1rem; } }
 

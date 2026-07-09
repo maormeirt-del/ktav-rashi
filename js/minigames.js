@@ -308,7 +308,8 @@ window.GameHall = (function () {
       ["P","P","P","P","P","P","P","P"],
       ["R","N","B","Q","K","B","N","R"]
     ];
-    const GL = { K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟" };
+    // גליפים מלאים (צלליות Staunton) לשני הצבעים — נצבעים בגוון עץ ע״י CSS
+    const GL = { K:"♚",Q:"♛",R:"♜",B:"♝",N:"♞",P:"♟", k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟" };
     let sel = null, over = false;
     const status = el("div", { class: "mg-status" }, ["תּוֹרְךָ (לָבָן)"]); const grid = el("div", { class: "chess" });
     host.appendChild(status); host.appendChild(el("div", { class: "chess-stage" }, [grid]));
