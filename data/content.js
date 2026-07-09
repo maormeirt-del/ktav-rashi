@@ -9,20 +9,35 @@
 
 /* ---- דרגות לומד ---- */
 window.RANKS = [
-  { name: "מַתְחִיל",        min: 0,    emoji: "🌱" },
-  { name: "מְפַעֲנֵחַ",      min: 60,   emoji: "🔍" },
-  { name: "קוֹרֵא",          min: 150,  emoji: "📖" },
-  { name: "תַּלְמִיד",       min: 320,  emoji: "🎓" },
-  { name: "לַמְדָן",         min: 560,  emoji: "📜" },
-  { name: "בָּקִי",          min: 880,  emoji: "🕯️" },
-  { name: "רָגִיל בְּרַשִׁ״י", min: 1300, emoji: "👑" }
+  { name: "מַתְחִיל",          min: 0,    emoji: "🌱" },
+  { name: "מְפַעֲנֵחַ",        min: 60,   emoji: "🔍" },
+  { name: "קוֹרֵא",            min: 150,  emoji: "📖" },
+  { name: "תַּלְמִיד",         min: 320,  emoji: "🎓" },
+  { name: "לַמְדָן",           min: 560,  emoji: "📜" },
+  { name: "בָּקִי",            min: 880,  emoji: "🕯️" },
+  { name: "רָגִיל בְּרַשִׁ״י",   min: 1300, emoji: "📕" },
+  { name: "חָרִיף",            min: 1800, emoji: "🦅" },
+  { name: "בָּקִי וְחָרִיף",    min: 2500, emoji: "⚡" },
+  { name: "גְּדוֹל בַּתּוֹרָה",  min: 3400, emoji: "🌟" },
+  { name: "גָּאוֹן",           min: 4600, emoji: "💎" },
+  { name: "אוֹר הַתּוֹרָה",     min: 6200, emoji: "👑" }
 ];
+window.PRESTIGE_STEP = 1800;   // מעל הדרגה העליונה — דרגות יוקרה אינסופיות (✦) כדי שתמיד יהיה לאן להתקדם
 window.rankFor = (pts) => {
-  let r = window.RANKS[0];
-  for (const x of window.RANKS) if (pts >= x.min) r = x;
-  return r;
+  const R = window.RANKS, top = R[R.length - 1];
+  if (pts >= top.min + window.PRESTIGE_STEP) {
+    const n = Math.floor((pts - top.min) / window.PRESTIGE_STEP);
+    return { name: top.name + " ✦" + n, min: top.min + n * window.PRESTIGE_STEP, emoji: "☀️", prestige: n };
+  }
+  let r = R[0]; for (const x of R) if (pts >= x.min) r = x; return r;
 };
-window.nextRank = (pts) => window.RANKS.find(x => x.min > pts) || null;
+window.nextRank = (pts) => {
+  const named = window.RANKS.find(x => x.min > pts);
+  if (named) return named;
+  const top = window.RANKS[window.RANKS.length - 1];
+  const n = (window.rankFor(pts).prestige || 0) + 1;
+  return { name: top.name + " ✦" + n, min: top.min + n * window.PRESTIGE_STEP, emoji: "☀️" };
+};
 
 /* ---- אֲרוֹן הַסְּפָרִים — התגמול המרכזי ----
    כל ספר נפתח בסיום עולם, ואז אפשר לקרוא בו קטע אמיתי בכתב רש״י. */
