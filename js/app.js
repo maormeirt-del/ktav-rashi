@@ -72,8 +72,8 @@ window.App = (function () {
     body.appendChild(el("p", { class: "sub-lead" }, ["טֶקְסְט אֲמִתִּי בִּכְתָב רָשִׁ״י — פָּסוּק וְהַפֵּרוּשׁ, שֻׁלְחָן עָרוּךְ וּמִשְׁנָה בְּרוּרָה."]));
     const cards = el("div", { class: "beit-cards" });
     [
-      { kind: "chumash", icon: "📕", title: "חֻמָּשׁ עִם רָשִׁ״י", sub: "בְּרֵאשִׁית א׳ — פָּסוּק וּפֵרוּשׁ רָשִׁ״י", hue: 355 },
-      { kind: "halacha", icon: "📔", title: "שֻׁלְחָן עָרוּךְ + מִשְׁנָה בְּרוּרָה", sub: "אֹרַח חַיִּים סִימָן א׳–ב׳", hue: 210 }
+      { kind: "chumash", icon: "📕", title: "חֻמָּשׁ עִם רָשִׁ״י", sub: "בְּרֵאשִׁית א׳–ג׳ — 80 פְּסוּקִים עִם רָשִׁ״י", hue: 355 },
+      { kind: "halacha", icon: "📔", title: "שֻׁלְחָן עָרוּךְ + מִשְׁנָה בְּרוּרָה", sub: "אֹרַח חַיִּים · סִימָנִים א׳–י״ב", hue: 210 }
     ].forEach(c => cards.appendChild(
       el("button", { class: "beit-card", style: `--hue:${c.hue}`, onclick: () => libraryReader(c.kind) }, [
         el("span", { class: "bc-icon" }, [c.icon]),
@@ -85,14 +85,21 @@ window.App = (function () {
     drain();
   }
 
-  function libraryReader(kind) {
+  function libraryReader(kind, idx) {
     const data = window.LIBRARY[kind];
+    const items = kind === "chumash" ? data.perakim : data.simanim;
+    idx = Math.min(Math.max(0, idx || 0), items.length - 1);
+    const cur = items[idx];
     const daf = el("div", { class: "daf" });
     const hero = el("div", { class: "daf-hero", style: `--hue:${kind === "chumash" ? 355 : 210}` }, [
       el("button", { class: "back", onclick: () => go("beit") }, ["›"]),
       el("span", { class: "dh-icon" }, [data.icon]),
       el("h2", {}, [data.title]), el("p", {}, [data.sub])
     ]);
+    // בורר פרק/סימן
+    const selector = el("div", { class: "lib-sel" }, items.map((it, i) =>
+      el("button", { class: "lib-tab" + (i === idx ? " on" : ""), onclick: () => libraryReader(kind, i) },
+        [kind === "chumash" ? "פֶּרֶק " + it.n : "סִימָן " + it.n])));
     // כפתור-רמז גלובלי: החלף כתב רש״י ↔ מרובע
     let sq = false;
     const toggle = el("button", { class: "sq-toggle", onclick: () => {
@@ -101,10 +108,11 @@ window.App = (function () {
     } }, ["🔤 הַצֵּג מְרֻבָּע"]);
 
     const scroll = el("div", { class: "daf-scroll" });
-    if (kind === "chumash") data.units.forEach(u => scroll.appendChild(chumashUnit(u)));
-    else data.simanim.forEach(s => scroll.appendChild(halachaSiman(s)));
+    if (kind === "chumash") cur.units.forEach(u => scroll.appendChild(chumashUnit(u)));
+    else scroll.appendChild(halachaSiman(cur));
+    daf.appendChild(scroll);
 
-    UI.setScreen(el("div", { class: "page daf-page" }, [hero, el("div", { class: "daf-tools" }, [toggle]), daf.appendChild(scroll) && daf, UI.nav("beit")]));
+    UI.setScreen(el("div", { class: "page daf-page" }, [hero, selector, el("div", { class: "daf-tools" }, [toggle]), daf, UI.nav("beit")]));
   }
 
   function rashiTxt(s) {   // כתב רש״י לא-מנוקד, מתחלף למרובע ע״י .show-square
@@ -129,18 +137,17 @@ window.App = (function () {
     const box = el("div", { class: "siman" });
     box.appendChild(el("div", { class: "siman-head" }, [`סִימָן ${s.n} · ${s.title}`]));
     s.seifim.forEach(sf => {
-      const seif = el("div", { class: "seif" }, [
+      box.appendChild(el("div", { class: "seif" }, [
         el("div", { class: "sa-line" }, [ el("span", { class: "seif-n" }, [String(sf.n)]), el("span", { class: "sa-txt" }, [sf.sa]) ])
-      ]);
-      if (sf.mb && sf.mb.length) {
-        const mb = el("div", { class: "mb-wrap" }, [ el("span", { class: "mb-label" }, ["מִשְׁנָה בְּרוּרָה"]) ]);
-        sf.mb.forEach(m => mb.appendChild(el("div", { class: "mb-note" }, [
-          el("span", { class: "mb-n rt" }, [`(${window.stripNikud(m.n)})`]), rashiTxt(" " + m.t)
-        ])));
-        seif.appendChild(mb);
-      }
-      box.appendChild(seif);
+      ]));
     });
+    if (s.mb && s.mb.length) {
+      const mb = el("div", { class: "mb-wrap" }, [ el("span", { class: "mb-label" }, ["מִשְׁנָה בְּרוּרָה"]) ]);
+      s.mb.forEach(m => mb.appendChild(el("div", { class: "mb-note" }, [
+        el("span", { class: "mb-n rt" }, [`(${window.stripNikud(m.n)})`]), rashiTxt(" " + m.t)
+      ])));
+      box.appendChild(mb);
+    }
     return box;
   }
 

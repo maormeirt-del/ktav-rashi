@@ -306,6 +306,10 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .sq-toggle { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 9px 18px;
   background: var(--card); color: var(--ink); box-shadow: var(--shadow); cursor: pointer; font-size: .88rem; }
 .daf-scroll { padding: 8px 14px; }
+.lib-sel { display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.lib-sel::-webkit-scrollbar { display: none; }
+.lib-tab { flex: 0 0 auto; font: inherit; font-family: var(--font-display); font-weight: 700; font-size: .84rem; border: 2px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 7px 15px; cursor: pointer; white-space: nowrap; box-shadow: var(--shadow); }
+.lib-tab.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* --- חומש --- */
 .unit { background: var(--card); border-radius: 18px; padding: 16px 16px 8px; margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid var(--line); }
