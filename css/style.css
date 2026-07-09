@@ -388,15 +388,25 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .c4-c { aspect-ratio: 1; border-radius: 50%; border: 0; background: #dfe7f5; cursor: pointer; }
 .c4-c.r { background: #e0463e; } .c4-c.y { background: #f4c430; }
 
-.checkers, .chess { display: grid; grid-template-columns: repeat(8, 1fr); width: min(96vw, 440px); aspect-ratio: 1; margin: 10px auto; border: 3px solid var(--ink); border-radius: 6px; overflow: hidden; }
-.ck-c, .ch-c { aspect-ratio: 1; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; }
-.ck-c.light, .ch-c.light { background: #f0d9b5; } .ck-c.dark, .ch-c.dark { background: #b58863; }
+.checkers { display: grid; grid-template-columns: repeat(8, 1fr); width: min(96vw, 440px); aspect-ratio: 1; margin: 10px auto; border: 3px solid var(--ink); border-radius: 6px; overflow: hidden; }
+
+/* ---- שַׁחְמָט תְּלַת־מֵמַד (CSS 3D) ---- */
+.chess-stage { perspective: 1150px; perspective-origin: 50% 20%; display: flex; justify-content: center; padding: 50px 0 24px; overflow: visible; }
+.chess { display: grid; grid-template-columns: repeat(8, 1fr); width: min(82vw, 360px); aspect-ratio: 1; transform: rotateX(46deg); transform-style: preserve-3d; border-radius: 3px; box-shadow: 0 34px 36px rgba(0,0,0,.42), 0 0 0 7px #6f5130, 0 0 0 9px #4a3620; }
+.chess .ch-c { transform-style: preserve-3d; }
+
+.ck-c, .ch-c { aspect-ratio: 1; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; position: relative; }
+.ck-c.light, .ch-c.light { background: #f1dcbb; } .ck-c.dark, .ch-c.dark { background: #b07a48; }
 .ck-c.sel, .ch-c.sel { box-shadow: inset 0 0 0 3px #f4c430; }
-.ck-c.hint, .ch-c.hint { box-shadow: inset 0 0 0 4px rgba(46,164,99,.6); }
+.ck-c.hint, .ch-c.hint { box-shadow: inset 0 0 0 4px rgba(46,164,99,.65); }
+
 .ck-p { font-size: 1.7rem; line-height: 1; }
 .ck-p.wp { color: #f7f2e7; text-shadow: 0 1px 2px rgba(0,0,0,.5); } .ck-p.bp { color: #1e1e1e; }
 .ck-p.kg { color: #f4c430; }
-.ch-p { font-size: 2rem; line-height: 1; }
-.ch-p.wp { color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.55); } .ch-p.bp { color: #1a1a1a; }
-@media (min-width: 420px) { .ck-p { font-size: 2.1rem; } .ch-p { font-size: 2.4rem; } }
+
+/* כלים "עומדים": counter-rotate כנגד הטיית הלוח + צל קרקע */
+.ch-p { display: inline-block; font-size: 2.5rem; line-height: 1; transform: rotateX(-46deg) translateY(-16%); transform-origin: 50% 92%; filter: drop-shadow(0 6px 3px rgba(0,0,0,.55)); }
+.ch-p.wp { color: #fdfaf3; text-shadow: 0 0 2px rgba(80,50,20,.7); }
+.ch-p.bp { color: #23201c; text-shadow: 0 0 1px rgba(0,0,0,.4); }
+@media (min-width: 420px) { .ck-p { font-size: 2.1rem; } .ch-p { font-size: 3rem; } }
 

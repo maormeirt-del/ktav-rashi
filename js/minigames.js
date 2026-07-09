@@ -282,7 +282,7 @@ window.GameHall = (function () {
     const GL = { K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟" };
     let sel = null, over = false;
     const status = el("div", { class: "mg-status" }, ["תּוֹרְךָ (לָבָן)"]); const grid = el("div", { class: "chess" });
-    host.appendChild(status); host.appendChild(grid);
+    host.appendChild(status); host.appendChild(el("div", { class: "chess-stage" }, [grid]));
     const white = (p) => p && p === p.toUpperCase();
     const black = (p) => p && p === p.toLowerCase();
     const mine = (p) => white(p);
