@@ -18,6 +18,24 @@ window.GameHall = (function () {
     }, { passive: true });
   }
 
+  /* כלי שחמט כ-SVG: גרדיאנט עץ רדיאלי (ברק מעוגל) + קו־מתאר מסותת */
+  const WOOD_DEFS =
+    '<defs>' +
+    '<radialGradient id="woodW" cx="0.4" cy="0.26" r="0.92">' +
+    '<stop offset="0" stop-color="#fff4e0"/><stop offset="0.36" stop-color="#f0d0a2"/>' +
+    '<stop offset="0.72" stop-color="#cc9f60"/><stop offset="1" stop-color="#96703c"/></radialGradient>' +
+    '<radialGradient id="woodB" cx="0.4" cy="0.26" r="0.92">' +
+    '<stop offset="0" stop-color="#b98f5e"/><stop offset="0.4" stop-color="#734d29"/>' +
+    '<stop offset="0.82" stop-color="#3c2612"/><stop offset="1" stop-color="#1f1005"/></radialGradient>' +
+    '</defs>';
+  function pieceSVG(glyph, w) {
+    const g = w ? "woodW" : "woodB", st = w ? "#6a4a25" : "#150c02";
+    return '<svg class="ch-p ' + (w ? "wp" : "bp") + '" viewBox="0 0 100 116" xmlns="http://www.w3.org/2000/svg">' + WOOD_DEFS +
+      '<text x="50" y="60" font-size="100" text-anchor="middle" dominant-baseline="central" paint-order="stroke"' +
+      ' fill="url(#' + g + ')" stroke="' + st + '" stroke-width="1.6"' +
+      ' style="font-family:\'Segoe UI Symbol\',\'Noto Sans Symbols2\',\'Apple Symbols\',serif">' + glyph + '</text></svg>';
+  }
+
   /* ---------------- אולם ---------------- */
   function hall() {
     const pts = State.progress.points;
@@ -325,7 +343,7 @@ window.GameHall = (function () {
         const cell = el("button", { class: "ch-c " + (dark ? "dark" : "light") }, []);
         if (sel && sel[0] === r && sel[1] === c) cell.classList.add("sel");
         if (legal.some(m => m[0] === r && m[1] === c)) cell.classList.add("hint");
-        if (p) cell.appendChild(el("span", { class: "ch-p " + (white(p) ? "wp" : "bp") }, [GL[p]]));
+        if (p) { const h = document.createElement("span"); h.innerHTML = pieceSVG(GL[p], white(p)); cell.appendChild(h.firstElementChild); }
         cell.onclick = () => tap(r, c); grid.appendChild(cell);
       }
     }
