@@ -94,11 +94,13 @@ window.MEDALS = [
   { id: "all-seals",     tier: "gold",   emoji: "🏛️", name: "כָּל הַחוֹתָמוֹת",          test: p => (p.seals || []).length >= 3 }
 ];
 
-/* ---- מפת 7 העולמות — סֻלָּם הַחִידוֹת ----
-   כל עולם מוסיף שכבת הסתרה אחת. מה שנחשף בעולם אחד — נעלם בבא:
-     w0 הכל גלוי · w1 האות גלויה, השם מוסתר · w2 האות מוסתרת
-     w3 גם הרמזים בתשלום · w4 אות נעלמת מתוך מילה
-     w5 מילה נעלמת מתוך שורה · w6 אין רמזים בכלל.
+/* ---- מַפַּת הַמַּסָּע — בְּנוּיָה עַל הַחוֹבֶרֶת ----
+   הרצף, האשכולות והתרגילים לקוחים מחוברת "18 אותיות אתה כבר יודע".
+   שלושת עקרונות היסוד שלה, שכולם חוזרים כאן:
+     1. נִגּוּד לִפְנֵי שִׁנּוּן — לומדים אות תמיד מול תאומתה, לא בבידוד.
+     2. תַּרְגּוּל, לֹא הַצָּגָה — כל עולם נגמר ברשת סריקה: "סמן כל X, ספור".
+     3. לְמִידָה מֵחֲוָיָה — הבוס מסתיים בהפתעה שמתגלה רק אם צדקת.
+   ולבסוף החומר הסמוי: מי שמכיר כל אות ולא מכיר את ת״ל — עדיין לא קורא.
    ⚠️ מזהי משחקים (w0-reveal, w3-swap, w4-*) נשמרו — MEDALS נשענות עליהם. */
 window.WORLDS = [
   { id: "w0", title: "הַחִידָה הָרִאשׁוֹנָה", emoji: "🔦", hue: 45,
@@ -109,27 +111,29 @@ window.WORLDS = [
     sub: "הָאוֹת מוּלְךָ, וְהָרֶמֶז מַסְבִּיר מָה בְּדִיּוּק אַתָּה רוֹאֶה", opens: "chumash",
     games: [
       { id: "w1-sign1", type: "r-sign", title: "מִי אֲנִי?", emoji: "❓", pool: "easy" },
-      { id: "w1-sign2", type: "r-sign", title: "מִי אֲנִי? — סִבּוּב שֵׁנִי", emoji: "🔎", pool: "easy" },
-      { id: "w1-fam",   type: "r-family", title: "הַקַּוִּים וְהַסִּלְסוּלִים", emoji: "🧩", fams: ["kavim", "shaar"] }
+      { id: "w1-fam",   type: "r-family", title: "הַבּוֹדְדוֹת וְהַפֵּאִין", emoji: "🧩", fams: ["bodedot", "pf"] },
+      { id: "w1-grid",  type: "r-grid", title: "סַמֵּן כָּל בּוֹדֶדֶת. סְפֹר.", emoji: "🔍", fam: "bodedot" }
     ] },
 
-  { id: "w2", title: "בְּלִי לִרְאוֹת אֶת הָאוֹת", emoji: "🟡", hue: 40,
-    sub: "מֵעַכְשָׁו הָרֶמֶז לְבַדּוֹ. הָאוֹת מוּסְתֶּרֶת", opens: "avot",
+  { id: "w2", title: "אֶשְׁכּוֹלוֹת הַבִּלְבּוּל", emoji: "🟡", hue: 40,
+    sub: "נִגּוּד לִפְנֵי שִׁנּוּן: כָּל אוֹת נִלְמֶדֶת מוּל תְּאוֹמָתָהּ", opens: "avot",
     games: [
-      { id: "w2-fam1", type: "r-family", title: "הַפִּנָּה וְהָרֶגֶל", emoji: "📐", fams: ["dr", "hkt"] },
-      { id: "w2-fam2", type: "r-family", title: "הַזָּנָב וְהַגַּג", emoji: "🪶", fams: ["kbsh", "ahm"] },
-      { id: "w2-fam3", type: "r-family", title: "הַפֶּתַח וְהַיּוֹרְדוֹת", emoji: "⬇️", fams: ["atzl", "yordot"] },
-      /* מרוץ הזיהוי — כל 27 על לוח אחד, דקה, שלוש פסילות. כאן זה המקום:
-         רק בסוף w2 התלמיד באמת ראה את כל האשכולות. */
-      { id: "w1-match", type: "match", title: "מֵרוֹץ הַזִּהוּי — כָּל 27", emoji: "⏱️" }
+      { id: "w2-fam1", type: "r-family", title: "א · ח · מ", emoji: "🏠", fams: ["ahm"] },
+      { id: "w2-g1",   type: "r-grid",   title: "סַמֵּן כָּל אָלֶף. סְפֹר.", emoji: "🔍", fam: "ahm", target: "א" },
+      { id: "w2-fam2", type: "r-family", title: "כ · ב · ש  וְ־ד · ר", emoji: "🪶", fams: ["kbsh", "dr"] },
+      { id: "w2-g2",   type: "r-grid",   title: "סַמֵּן כָּל דָּלֶת. סְפֹר.", emoji: "📐", fam: "dr", target: "ד" },
+      { id: "w2-fam3", type: "r-family", title: "ה · ק · ת  וְ־ע · צ · ל", emoji: "🦶", fams: ["hkt", "ayz"] },
+      { id: "w1-match", type: "match",   title: "מֵרוֹץ הַזִּהוּי — כָּל 27", emoji: "⏱️" }
     ] },
 
-  { id: "w3", title: "הַבַּלָּשׁ", emoji: "🔴", hue: 355,
-    sub: "כָּל רֶמֶז נוֹסָף עוֹלֶה לְךָ נְקֻדּוֹת. בְּכַמָּה תְּפַצֵּחַ?", opens: "mikraot",
+  { id: "w3", title: "הַבּוֹס: ס · ם", emoji: "🔴", hue: 355,
+    sub: "טָעוּת מִסְפַּר 1 בְּכָל הַכְּתָב — וְהַהַפְתָּעָה שֶׁמְּחַכָּה בַּסּוֹף", opens: "mikraot",
     games: [
-      { id: "w3-swap", type: "r-family", title: "הַזּוּג שֶׁמַּפִּיל אֶת כֻּלָּם (ס/ם)", emoji: "🔀", fams: ["sm"] },
-      { id: "w3-det",  type: "r-detective", title: "תִּיק הַתֵּשַׁע הַקָּשׁוֹת", emoji: "🕵️", pool: "hard" },
-      { id: "w3-det2", type: "r-detective", title: "תִּיק כָּל הַכְּתָב", emoji: "🥊", pool: "all", boss: true }
+      { id: "w3-swap", type: "r-family", title: "הַזּוּג שֶׁמַּפִּיל אֶת כֻּלָּם", emoji: "🔀", fams: ["sm"] },
+      { id: "w3-grid", type: "r-grid", title: "סַמֵּן כָּל סָמֶךְ. סְפֹר.", emoji: "🎯", fam: "sm", target: "ס" },
+      { id: "w3-star", type: "r-star", title: "הַהַפְתָּעָה", emoji: "✡️" },
+      { id: "w3-mat",  type: "r-family", title: "מַטְרִיצַת ו · ז · ן · ץ · ך", emoji: "⬇️", fams: ["vzntzk"] },
+      { id: "w3-det",  type: "r-detective", title: "תִּיק כָּל הַכְּתָב", emoji: "🕵️", pool: "all", boss: true }
     ] },
 
   { id: "w4", title: "אוֹת נֶעֶלְמָה", emoji: "🔵", hue: 210,
@@ -147,8 +151,18 @@ window.WORLDS = [
       { id: "w5-read2", type: "r-line", title: "שׁוּרוֹת אֲרֻכּוֹת", emoji: "📖", lvl: 6 }
     ] },
 
+  /* העולם שנעדר מהאפליקציה עד היום, והוא לב החוברת */
+  { id: "w5h", title: "הַחֹמֶר הַסָּמוּי", emoji: "🔑", hue: 300,
+    sub: "אַתָּה מַכִּיר כָּל אוֹת. וְאָז אַתָּה פּוֹגֵשׁ ת״ל וְנִתְקָע",
+    games: [
+      { id: "w5h-ab",  type: "r-abbr", title: "12 רָאשֵׁי הַתֵּבוֹת", emoji: "🔑", set: "abbr" },
+      { id: "w5h-ger", type: "r-abbr", title: "קִצּוּרֵי גֶּרֶשׁ", emoji: "׳", set: "geresh" },
+      { id: "w5h-nus", type: "r-abbr", title: "סִימָנֵי נֻסָּח", emoji: "📝", set: "nusach" },
+      { id: "w5h-all", type: "r-abbr", title: "הַכֹּל בְּיַחַד", emoji: "🧠", set: "all" }
+    ] },
+
   { id: "w6", title: "בְּלִי רְמָזִים", emoji: "🟠", hue: 25,
-    sub: "אֵין רֶמֶז, אֵין נִקּוּד עֵזֶר. רַק אַתָּה וְהַכְּתָב", opens: "gemara",
+    sub: "אֵין רֶמֶז וְאֵין עֵזֶר. רַק אַתָּה וְהַכְּתָב", opens: "gemara",
     games: [
       { id: "w6-read",  type: "r-fluent", title: "קֶטַע מָלֵא", emoji: "🦅", lvl: 6 },
       { id: "w6-daily", type: "r-fluent", title: "חִידַת הַשֶּׁטֶף", emoji: "🏁", lvl: 6 }

@@ -377,9 +377,150 @@ window.Riddles = (function () {
     }
   }
 
+
+  /* ============ 7. רֶשֶׁת הַהַבְחָנָה — התרגול החתום של החוברת ============
+     "הַקֵּף כָּל צָדִ״י. סְפֹר." הלומד סורק רשת של אותיות מבלבלות
+     ומסמן את כל המופעים של אות אחת. זה לא רב-ברירה: זו שליפה
+     תחת לחץ, וזה בדיוק מה שקורה בעין על דף גמרא.
+     מדד אישי בלבד — כמה מצאת מתוך כמה שיש, ובכמה זמן. */
+  function grid(game, world) {
+    const fam = window.familyById(game.fam) || window.FAMILIES[0];
+    const pool = fam.chars;
+    const target = game.target || pool[Math.floor(Math.random() * pool.length)];
+    const N = game.cells || 44;
+    /* בין רבע לשליש מהתאים הם המטרה — מספיק כדי שיהיה מה למצוא,
+       לא כל כך הרבה שאפשר לסמן הכול בעיוורון */
+    const hits = Math.max(6, Math.round(N * (0.22 + Math.random() * 0.1)));
+    const cells = shuffle([].concat(
+      Array.from({ length: hits }, () => target),
+      Array.from({ length: N - hits }, (_, i) => pool.filter(c => c !== target)[i % (pool.length - 1)])
+    ));
+    let found = 0, over = false, ch = null;
+
+    Games.frame(game, world, (body) => {
+      ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"), { pairs: hits });
+      body.appendChild(riddleCard([
+        el("div", { class: "fam-tag" }, [fam.name]),
+        el("p", { class: "ww-why" }, [fam.rule]),
+        ask("סַמֵּן כָּל " + NAME(target) + " בָּרֶשֶׁת. יֵשׁ " + hits + ".")
+      ]));
+      const status = el("div", { class: "tip" });
+      body.appendChild(status);
+      const g = el("div", { class: "scan-grid" });
+      cells.forEach(c => {
+        const b = el("button", { class: "scan-cell" }, [rashi(c)]);
+        b.addEventListener("click", () => tap(c, b));
+        g.appendChild(b);
+      });
+      body.appendChild(g);
+      ch.start();
+
+      function tap(c, btn) {
+        if (over || btn.classList.contains("done")) return;
+        if (c === target) {
+          btn.classList.add("done", "hit"); Audio2.sfx.correct();
+          found++; ch.paint(found); State.recordResult(target, true);
+          status.innerHTML = "";
+          if (found === hits) return end(true);
+        } else {
+          btn.classList.add("done", "miss"); Audio2.sfx.wrong();
+          State.recordResult(c, false);
+          status.innerHTML = ""; status.appendChild(whyWrong(c, target));
+          if (ch.strike()) return end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת");
+        }
+      }
+      function end(won, why) {
+        if (over) return; over = true; ch.stop();
+        Games.scoreCard(game, world, { won, why, ch, base: won ? 20 : found * 2,
+          rows: [["מָצָאתָ", found + " מִתּוֹךְ " + hits]] });
+      }
+    });
+  }
+
+  /* ============ 8. הַהַפְתָּעָה — למידה מחוויה ============
+     הרשת נראית כמו עוד תרגיל ס/ם. היא לא: כשמסמנים נכון את כל
+     הסמ״כים מתגלה מגן דוד. הלומד לא "לומד" את ההבדל — הוא רואה
+     אותו קורה. טעות אחת שוברת את הצורה, וזה כל הרעיון. */
+  const STAR = [
+    "000000010000000", "000000101000000", "000000101000000", "011111111111110",
+    "001010000010100", "001010000010100", "000100000001000", "001010000010100",
+    "001010000010100", "011111111111110", "000000101000000", "000000101000000",
+    "000000010000000"
+  ];
+  function star(game, world) {
+    const rows = STAR.map(r => r.split(""));
+    const total = rows.flat().filter(v => v === "1").length;
+    let found = 0, over = false, ch = null;
+
+    Games.frame(game, world, (body) => {
+      ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"), { pairs: total });
+      body.appendChild(riddleCard([
+        ask("בָּרֶשֶׁת הַזֹּאת מֻחְבֵּאת צוּרָה."),
+        el("p", { class: "ww-why" }, ["הִיא תִּתְגַּלֶּה רַק אִם תְּסַמֵּן נָכוֹן: כָּל סָמֶ״ךְ, וְאַף מֵם סוֹפִית. יֵשׁ " + total + " סָמֶ״כִים."])
+      ]));
+      const status = el("div", { class: "tip" });
+      body.appendChild(status);
+      const g = el("div", { class: "star-grid" });
+      rows.forEach(row => row.forEach(v => {
+        const c = v === "1" ? "ס" : "ם";
+        const b = el("button", { class: "star-cell" }, [rashi(c)]);
+        b.addEventListener("click", () => tap(c, b));
+        g.appendChild(b);
+      }));
+      body.appendChild(g);
+      ch.start();
+
+      function tap(c, btn) {
+        if (over || btn.classList.contains("done")) return;
+        if (c === "ס") {
+          btn.classList.add("done", "lit"); Audio2.sfx.correct();
+          found++; ch.paint(found); State.recordResult("ס", true);
+          status.innerHTML = "";
+          if (found === total) { UI.burst(["✡️", "✨", "🌟"]); return setTimeout(() => end(true), 900); }
+        } else {
+          btn.classList.add("done", "miss"); Audio2.sfx.wrong();
+          State.recordResult("ם", false);
+          status.innerHTML = ""; status.appendChild(whyWrong("ם", "ס"));
+          if (ch.strike()) return end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת");
+        }
+      }
+      function end(won, why) {
+        if (over) return; over = true; ch.stop();
+        Games.scoreCard(game, world, { won, why, ch, base: won ? 30 : found,
+          rows: [["סָמֶ״כִים", found + " מִתּוֹךְ " + total],
+                 ["הַצּוּרָה", won ? "מָגֵן דָּוִד ✡️" : "לֹא הִתְגַּלְּתָה"]] });
+      }
+    });
+  }
+
+  /* ============ 9. הַחֹמֶר הַסָּמוּי — ראשי תיבות ============
+     החוסם האמיתי. אפשר להכיר כל אות ועדיין להיתקע על ת״ל. */
+  function abbrev(game, world) {
+    const set = window.abbrevSet(game.set || "abbr");
+    const all = window.allAbbrev();
+    const items = pick(set, Math.min(Q, set.length));
+    const qs = items.map(a => {
+      const distract = pick(all.filter(x => x.e !== a.e), 3);
+      const options = shuffle([{ a, ok: true }, ...distract.map(x => ({ a: x, ok: false }))]);
+      return {
+        prompt: (n) => n.appendChild(riddleCard([
+          el("div", { class: "abbr-big" }, [rashi(a.f)]),
+          a.n ? clueLine("מוֹפִיעַ " + a.n + " פְּעָמִים בְּרָשִׁ״י. אִי אֶפְשָׁר לְדַלֵּג עָלָיו.", "תְּדִירוּת") : null,
+          ask("מָה זֶה אוֹמֵר?")
+        ])),
+        options: options.map(o => ({ node: el("span", { class: "name" }, [o.a.e]), ok: o.ok, a: o.a })),
+        explain: (o) => whyWrongText(o.a.f, a.f, o.a.f + " = " + o.a.e + ". " + a.f + " = " + a.e + (a.note ? " (" + a.note + ")" : "") + "."),
+        tip: a.note ? a.f + " — " + a.note : null,
+        onResult: (ok) => { if (ok) State.award(4); }
+      };
+    });
+    Games.runMC(game, world, qs);
+  }
+
   const TYPES = {
     "r-open": open, "r-sign": sign, "r-family": family, "r-detective": detective,
-    "r-word": word, "r-line": line, "r-fluent": fluent
+    "r-word": word, "r-line": line, "r-fluent": fluent,
+    "r-grid": grid, "r-star": star, "r-abbr": abbrev
   };
   return { play: (g, w) => (TYPES[g.type] || sign)(g, w), TYPES, whyWrong, pairHint, whyWrongText };
 })();

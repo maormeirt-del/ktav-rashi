@@ -518,3 +518,37 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .tip:has(+ .race-grid) .ww-chip .rashi { font-size: 2.9rem; }
 .tip:has(+ .race-grid) .ww-why { font-size: .86rem; margin-top: 7px; }
 .tip:has(+ .race-grid) .retry { margin-top: 6px; font-size: .98rem; }
+
+
+/* ===========================================================
+   רֶשֶׁת הַסְּרִיקָה + הַהַפְתָּעָה — התרגול החתום של החוברת.
+   "סמן כל X, ספור": סריקה תחת לחץ, בדיוק מה שהעין עושה על דף גמרא.
+   =========================================================== */
+.scan-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+.scan-cell { background: var(--card); border: 1.5px solid var(--line); border-radius: 11px;
+  padding: 8px 2px; font-size: 1.7rem; cursor: pointer; min-height: 52px; color: var(--ink);
+  transition: transform .1s; }
+.scan-cell:active { transform: scale(.92); }
+.scan-cell.hit  { background: #e9f9ef; border-color: #2fa463; }
+.scan-cell.miss { background: #fdecea; border-color: #e05a4e; opacity: .6; }
+.scan-cell.done { pointer-events: none; }
+@media (max-width: 380px) { .scan-grid { grid-template-columns: repeat(5, 1fr); } }
+
+/* הצורה החבויה: 15 עמודות קבועות, אחרת המגן דוד לא נסגר */
+/* 15 עמודות על מסך טלפון = ~24px לתא. בגודל כזה הרגל של ס לא נראית,
+   והתרגיל הופך לבלתי-פתיר. לכן: פריצה אל מחוץ לריפוד העמוד,
+   מרווח מינימלי, וגליף שממלא את התא. */
+.star-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 1px; margin: 8px -14px 0;
+  width: calc(100% + 28px); }
+.star-cell { background: var(--card); border: 1px solid var(--line); border-radius: 3px;
+  padding: 0; font-size: 1.25rem; line-height: 1; cursor: pointer; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center; color: var(--ink);
+  overflow: visible; }
+.star-cell .rashi { line-height: 1; }
+.star-cell.lit  { background: var(--gold); border-color: var(--gold); color: #fff; transform: scale(1.04); }
+.star-cell.miss { background: #fdecea; border-color: #e05a4e; }
+.star-cell.done { pointer-events: none; }
+
+/* החומר הסמוי: ראשי התיבות מוצגים גדול, הם הנושא ולא קישוט */
+.abbr-big .rashi { font-size: 3.6rem; line-height: 1.2; color: var(--accent); display: block; }
+.opt .name { line-height: 1.4; }
