@@ -94,54 +94,64 @@ window.MEDALS = [
   { id: "all-seals",     tier: "gold",   emoji: "🏛️", name: "כָּל הַחוֹתָמוֹת",          test: p => (p.seals || []).length >= 3 }
 ];
 
-/* ---- מפת 7 העולמות ---- */
+/* ---- מפת 7 העולמות — סֻלָּם הַחִידוֹת ----
+   כל עולם מוסיף שכבת הסתרה אחת. מה שנחשף בעולם אחד — נעלם בבא:
+     w0 הכל גלוי · w1 האות גלויה, השם מוסתר · w2 האות מוסתרת
+     w3 גם הרמזים בתשלום · w4 אות נעלמת מתוך מילה
+     w5 מילה נעלמת מתוך שורה · w6 אין רמזים בכלל.
+   ⚠️ מזהי משחקים (w0-reveal, w3-swap, w4-*) נשמרו — MEDALS נשענות עליהם. */
 window.WORLDS = [
-  { id: "w0", title: "אַתָּה כְּבָר יוֹדֵעַ!", emoji: "✨", hue: 45,
-    sub: "גַּלֵּה שֶׁאַתָּה כְּבָר מְזַהֶה כְּתָב רָשִׁ״י",
-    games: [ { id: "w0-reveal", type: "intro", title: "הַגִּלּוּי", emoji: "🔦" } ] },
+  { id: "w0", title: "הַחִידָה הָרִאשׁוֹנָה", emoji: "🔦", hue: 45,
+    sub: "כַּמָּה אַתָּה כְּבָר יוֹדֵעַ — בְּלִי שֶׁלִּמְּדוּ אוֹתְךָ?",
+    games: [ { id: "w0-reveal", type: "r-open", title: "כַּמָּה אַתָּה מְזַהֶה?", emoji: "🔦" } ] },
 
-  { id: "w1", title: "הָאוֹתִיּוֹת הַקַּלּוֹת", emoji: "🟢", hue: 145,
-    sub: "18 אוֹתִיּוֹת כִּמְעַט זֵהוֹת — קַל!", opens: "chumash",
+  { id: "w1", title: "רְמָזִים גְּלוּיִים", emoji: "🟢", hue: 145,
+    sub: "הָאוֹת מוּלְךָ, וְהָרֶמֶז מַסְבִּיר מָה בְּדִיּוּק אַתָּה רוֹאֶה", opens: "chumash",
     games: [
-      { id: "w1-match", type: "match", title: "הַתְאָמָה: רָשִׁ״י ↔ מְרֻבָּע", emoji: "🔗", pool: "easy" },
-      { id: "w1-id",    type: "identify", title: "מִי הָאוֹת?", emoji: "👁️", pool: "easy" },
-      { id: "w1-hunt",  type: "arcade", title: "צַיָּד הָאוֹתִיּוֹת", emoji: "🕹️", pool: "easy" }
+      { id: "w1-sign1", type: "r-sign", title: "מִי אֲנִי?", emoji: "❓", pool: "easy" },
+      { id: "w1-sign2", type: "r-sign", title: "מִי אֲנִי? — סִבּוּב שֵׁנִי", emoji: "🔎", pool: "easy" },
+      { id: "w1-fam",   type: "r-family", title: "הַקַּוִּים וְהַסִּלְסוּלִים", emoji: "🧩", fams: ["kavim", "shaar"] }
     ] },
 
-  { id: "w2", title: "הַדּוֹמוֹת", emoji: "🟡", hue: 40,
-    sub: "זוּגוֹת מִתְבַּלְבְּלִים — לוֹמְדִים זוֹ מוּל זוֹ", opens: "avot",
+  { id: "w2", title: "בְּלִי לִרְאוֹת אֶת הָאוֹת", emoji: "🟡", hue: 40,
+    sub: "מֵעַכְשָׁו הָרֶמֶז לְבַדּוֹ. הָאוֹת מוּסְתֶּרֶת", opens: "avot",
     games: [
-      { id: "w2-contrast", type: "contrast", title: "מְצָא אֶת הַהֶבְדֵּל", emoji: "🔎" },
-      { id: "w2-id",       type: "identify", title: "זִהוּי מָהִיר", emoji: "⚡", pool: "similar" }
+      { id: "w2-fam1", type: "r-family", title: "הַפִּנָּה וְהָרֶגֶל", emoji: "📐", fams: ["dr", "hkt"] },
+      { id: "w2-fam2", type: "r-family", title: "הַזָּנָב וְהַגַּג", emoji: "🪶", fams: ["kbsh", "ahm"] },
+      { id: "w2-fam3", type: "r-family", title: "הַפֶּתַח וְהַיּוֹרְדוֹת", emoji: "⬇️", fams: ["atzl", "yordot"] },
+      /* מרוץ הזיהוי — כל 27 על לוח אחד, דקה, שלוש פסילות. כאן זה המקום:
+         רק בסוף w2 התלמיד באמת ראה את כל האשכולות. */
+      { id: "w1-match", type: "match", title: "מֵרוֹץ הַזִּהוּי — כָּל 27", emoji: "⏱️" }
     ] },
 
-  { id: "w3", title: "הַבּוֹס: הַקָּשׁוֹת", emoji: "🔴", hue: 355,
-    sub: "7 הָאוֹתִיּוֹת הַקָּשׁוֹת + ס/ם שֶׁהִתְחַלְּפוּ", opens: "mikraot",
+  { id: "w3", title: "הַבַּלָּשׁ", emoji: "🔴", hue: 355,
+    sub: "כָּל רֶמֶז נוֹסָף עוֹלֶה לְךָ נְקֻדּוֹת. בְּכַמָּה תְּפַצֵּחַ?", opens: "mikraot",
     games: [
-      { id: "w3-swap",     type: "swap", title: "הָאוֹת הַמִּתְחַלֶּפֶת (ם/ס)", emoji: "🔀" },
-      { id: "w3-id",       type: "identify", title: "הַקָּשׁוֹת", emoji: "🎯", pool: "hard" },
-      { id: "w3-contrast", type: "contrast", title: "נִגּוּד הַבּוֹס", emoji: "🥊", boss: true }
+      { id: "w3-swap", type: "r-family", title: "הַזּוּג שֶׁמַּפִּיל אֶת כֻּלָּם (ס/ם)", emoji: "🔀", fams: ["sm"] },
+      { id: "w3-det",  type: "r-detective", title: "תִּיק הַתֵּשַׁע הַקָּשׁוֹת", emoji: "🕵️", pool: "hard" },
+      { id: "w3-det2", type: "r-detective", title: "תִּיק כָּל הַכְּתָב", emoji: "🥊", pool: "all", boss: true }
     ] },
 
-  { id: "w4", title: "מִלִּים", emoji: "🔵", hue: 210,
-    sub: "מְחַבְּרִים אוֹתִיּוֹת לְמִלִּים שְׁלֵמוֹת", opens: "ein-yaakov",
+  { id: "w4", title: "אוֹת נֶעֶלְמָה", emoji: "🔵", hue: 210,
+    sub: "מִלָּה אֲמִתִּית, אוֹת אַחַת חֲסֵרָה. הַמִּלָּה עַצְמָהּ הִיא רֶמֶז", opens: "ein-yaakov",
     games: [
-      { id: "w4-read1", type: "readword", title: "מַהִי הַמִּלָּה?", emoji: "📖", lvl: [1, 2] },
-      { id: "w4-fill",  type: "fill", title: "הַשְׁלֵם אֶת הָאוֹת", emoji: "🧩", lvl: [1, 2] },
-      { id: "w4-read2", type: "readword", title: "מִלִּים גְּדוֹלוֹת", emoji: "📚", lvl: [3, 4] }
+      { id: "w4-read1", type: "r-word", title: "מִלִּים קְצָרוֹת", emoji: "🔤", lvl: [1, 2] },
+      { id: "w4-fill",  type: "r-word", title: "מֻשָּׂגִים", emoji: "🧩", lvl: [2, 3] },
+      { id: "w4-read2", type: "r-word", title: "מִלִּים גְּדוֹלוֹת", emoji: "📚", lvl: [3, 4] }
     ] },
 
-  { id: "w5", title: "מִשְׁפָּטִים וְרַשִׁ״י", emoji: "🟣", hue: 275,
-    sub: "קוֹרְאִים קֶטַע רָשִׁ״י אֲמִתִּי — עִם רְמָזִים", opens: "mishna-brura",
+  { id: "w5", title: "מִלָּה נֶעֶלְמָה", emoji: "🟣", hue: 275,
+    sub: "קֶטַע רָשִׁ״י אֲמִתִּי עִם חוֹר. הַהֶסְבֵּר הוּא הָרֶמֶז", opens: "mishna-brura",
     games: [
-      { id: "w5-read", type: "readpassage", title: "רָשִׁ״י עַל הַתּוֹרָה", emoji: "📜", lvl: 5 }
+      { id: "w5-read",  type: "r-line", title: "חִידַת הַשּׁוּרָה", emoji: "📜", lvl: 5 },
+      { id: "w5-read2", type: "r-line", title: "שׁוּרוֹת אֲרֻכּוֹת", emoji: "📖", lvl: 6 }
     ] },
 
-  { id: "w6", title: "שֶׁטֶף", emoji: "🟠", hue: 25,
-    sub: "קְרִיאָה שׁוֹטֶפֶת — בְּלִי רְמָזִים", opens: "gemara",
+  { id: "w6", title: "בְּלִי רְמָזִים", emoji: "🟠", hue: 25,
+    sub: "אֵין רֶמֶז, אֵין נִקּוּד עֵזֶר. רַק אַתָּה וְהַכְּתָב", opens: "gemara",
     games: [
-      { id: "w6-read", type: "readpassage", title: "קֶטַע מָלֵא", emoji: "🦅", lvl: 6 },
-      { id: "w6-daily", type: "readpassage", title: "אֶתְגָּר הַשֶּׁטֶף", emoji: "🏁", lvl: 6, hint: false }
+      { id: "w6-read",  type: "r-fluent", title: "קֶטַע מָלֵא", emoji: "🦅", lvl: 6 },
+      { id: "w6-daily", type: "r-fluent", title: "חִידַת הַשֶּׁטֶף", emoji: "🏁", lvl: 6 }
     ] }
 ];
 window.worldById = (id) => window.WORLDS.find(w => w.id === id);

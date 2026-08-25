@@ -49,9 +49,89 @@ window.Games = (function () {
     UI.setScreen(el("div", { class: "game center" }, [inner]));
   }
 
-  /* ---------- רץ שאלות רב-ברירה ---------- */
+  /* ===========================================================
+     שִׁכְבַת הָאֶתְגָּר — חלה על כל המשימות באפליקציה.
+     דקה אחת · שלוש פסילות · מי שסיים מהר יותר וטעה פחות מקבל יותר.
+
+     למה על הכל ולא רק על המרוץ: זיהוי בלי לחץ הוא זיהוי איטי,
+     ובדף גמרא אף אחד לא עוצר לחשוב שלוש שניות על כל אות.
+     חידת הפתיחה (w0) פטורה — אין בה נכון ולא נכון.
+     =========================================================== */
+  const CH_LIMIT = 60, CH_STRIKES = 3;
+
+  function challenge(host, onTimeout, opts) {
+    opts = opts || {};
+    let onTime = onTimeout;
+    let left = CH_LIMIT, strikes = 0, timer = null, running = false;
+    const hud = el("div", { class: "race-hud" }, [
+      el("span", { class: "hud hud-time" }, ["⏱ " + left]),
+      opts.pairs ? el("span", { class: "hud hud-pairs" }, ["✓ 0/" + opts.pairs]) : null,
+      el("span", { class: "hud hud-strikes" }, ["✗ 0/" + CH_STRIKES])
+    ]);
+    host.appendChild(hud);
+    function paint(pairsDone) {
+      const t = hud.querySelector(".hud-time");
+      t.textContent = "⏱ " + Math.max(0, left);
+      t.classList.toggle("warn", left <= 10);
+      hud.querySelector(".hud-strikes").textContent = "✗ " + strikes + "/" + CH_STRIKES;
+      const p = hud.querySelector(".hud-pairs");
+      if (p && pairsDone != null) p.textContent = "✓ " + pairsDone + "/" + opts.pairs;
+    }
+    function stop() { running = false; clearInterval(timer); timer = null; }
+    return {
+      hud, paint, stop,
+      start() {
+        if (running) return; running = true;
+        timer = setInterval(() => {
+          left--; paint();
+          if (left <= 0) { stop(); onTime && onTime(); }
+        }, 1000);
+      },
+      strike() { strikes++; paint(); return strikes >= CH_STRIKES; },   // true = נגמר
+      /* אותו שעון ממשיך לשלב הבא (קריאה → שאלה), רק היעד משתנה */
+      handOff(fn) { onTime = fn; return this; },
+      get left()    { return Math.max(0, left); },
+      get used()    { return CH_LIMIT - Math.max(0, left); },
+      get strikes() { return strikes; }
+    };
+  }
+
+  /* כרטיס סיום אחיד — אותה מתמטיקה בכל משימה */
+  function scoreCard(game, world, o) {
+    const timeBonus = o.won ? o.ch.left : 0;
+    const accBonus  = o.won ? (CH_STRIKES - o.ch.strikes) * 10 : 0;
+    const total     = Math.max(0, o.base) + timeBonus + accBonus;
+    const first = State.markGameDone(game.id, world.id, total);
+    if (!first && total) State.award(total);
+
+    const rows = (o.rows || []).concat([
+      ["זְמַן", o.ch.used + " שְׁנִיּוֹת"],
+      ["פְּסִילוֹת", o.ch.strikes + "/" + CH_STRIKES]
+    ]);
+    const perfect = o.won && o.ch.strikes === 0;
+    const card = el("div", { class: "done-card race-done" }, [
+      el("div", { class: "done-emoji" }, [o.won ? (perfect ? "🏆" : "🎉") : "⏱"]),
+      el("div", { class: "done-title" }, [o.won ? (perfect ? "מֻשְׁלָם, בְּלִי פְּסִילָה אַחַת!" : "סִיַּמְתָּ!") : (o.why || "נִגְמַר")]),
+      el("div", { class: "score-rows" }, rows.map(r =>
+        el("div", { class: "score-row" }, [el("span", {}, [r[0]]), el("b", {}, [String(r[1])])]))),
+      o.won ? el("div", { class: "score-rows bonus" }, [
+        el("div", { class: "score-row" }, [el("span", {}, ["בָּסִיס"]), el("b", {}, ["+" + Math.max(0, o.base)])]),
+        el("div", { class: "score-row" }, [el("span", {}, ["בּוֹנוּס זְמַן"]), el("b", {}, ["+" + timeBonus])]),
+        el("div", { class: "score-row" }, [el("span", {}, ["בּוֹנוּס דִּיּוּק"]), el("b", {}, ["+" + accBonus])])
+      ]) : null,
+      el("div", { class: "done-score" }, ["✦ " + total + " נְקֻדּוֹת"]),
+      el("div", { class: "race-actions" }, [
+        el("button", { class: "btn ghost", onclick: () => play(game, world) }, ["🔁 שׁוּב"]),
+        el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => App.world(world.id)) }, ["הַמְשֵׁךְ"])
+      ])
+    ]);
+    if (o.won) { UI.burst(); Audio2.sfx.reward(); }
+    UI.setScreen(el("div", { class: "game center" }, [card]));
+  }
+
+  /* ---------- רץ שאלות רב-ברירה (תחת שכבת האתגר) ---------- */
   // questions: [{ prompt(node), options:[{node, ok, char}], tip, onResult(ok) }]
-  function runMC(game, world, questions) {
+  function runMC(game, world, questions, ch0) {
     const body = el("div", { class: "mc" });
     UI.setScreen(el("div", { class: "game" }, [
       el("div", { class: "game-top" }, [
@@ -59,12 +139,24 @@ window.Games = (function () {
         el("div", { class: "game-title" }, [game.emoji + " " + game.title])
       ]), body
     ]));
+    const ch = ch0 ? (body.appendChild(ch0.hud), ch0.handOff(() => end(false, "נִגְמַר הַזְּמַן")))
+                   : challenge(body, () => end(false, "נִגְמַר הַזְּמַן"));
     const setDot = progressDots(questions.length, body);
     const stage = el("div", { class: "stage" }); body.appendChild(stage);
-    let i = 0, score = 0;
+    let i = 0, score = 0, over = false;
+    ch.start();
+
+    function end(won, why) {
+      if (over) return; over = true; ch.stop();
+      scoreCard(game, world, {
+        won, why, ch, base: score * 5,
+        rows: [["תְּשׁוּבוֹת נְכוֹנוֹת", score + "/" + questions.length]]
+      });
+    }
 
     function show() {
-      if (i >= questions.length) return finish(game, world, score, questions.length);
+      if (over) return;
+      if (i >= questions.length) return end(true);
       const q = questions[i]; stage.innerHTML = "";
       const promptWrap = el("div", { class: "prompt" }); q.prompt(promptWrap);
       const opts = el("div", { class: "options n" + q.options.length });
@@ -76,7 +168,9 @@ window.Games = (function () {
       stage.appendChild(promptWrap); stage.appendChild(opts); stage.appendChild(tip);
 
       function choose(o, btn) {
+        if (over) return;
         [...opts.children].forEach(c => c.classList.add("locked"));
+        let dead = false;
         if (o.ok) {
           btn.classList.add("ok"); score++; setDot(i, true); Audio2.sfx.correct();
           q.onResult && q.onResult(true);
@@ -84,9 +178,13 @@ window.Games = (function () {
           btn.classList.add("bad"); setDot(i, false); Audio2.sfx.wrong();
           [...opts.children].forEach((c, ci) => { if (q.options[ci].ok) c.classList.add("ok"); });
           q.onResult && q.onResult(false);
+          dead = ch.strike();
         }
         if (q.tip) tip.textContent = q.tip;
-        setTimeout(() => { i++; show(); }, o.ok ? 780 : 1500);
+        setTimeout(() => {
+          if (dead) return end(false, "שָׁלוֹשׁ פְּסִילוֹת");
+          i++; show();
+        }, o.ok ? 780 : 1500);
       }
     }
     show();
@@ -167,10 +265,10 @@ window.Games = (function () {
   function swap(game, world) {
     frame(game, world, (body) => {
       body.appendChild(el("div", { class: "swap-explain" }, [
-        el("p", { class: "lead" }, ["בִּכְתָב רָשִׁ״י שְׁתֵּי הָאוֹתִיּוֹת הָאֵלֶּה מִתְחַלְּפוֹת:"]),
+        el("p", { class: "lead" }, ["בַּכְּתָב הָרָגִיל ס עֲגֻלָּה וְ־ם מְרֻבַּעַת. בִּכְתָב רָשִׁ״י שְׁתֵּיהֶן עֲגֻלּוֹת — וְלָכֵן צָרִיךְ סִימָן חָדָשׁ:"]),
         el("div", { class: "swap-pair" }, [
-          el("div", {}, [rashi("ס"), el("small", {}, ["סָמֶךְ — נִרְאֵית כְּמוֹ ם"])]),
-          el("div", {}, [rashi("ם"), el("small", {}, ["מֵם סוֹפִית — נִרְאֵית כְּמוֹ ס"])])
+          el("div", {}, [rashi("ס"), el("small", {}, ["סָמֶךְ — יֵשׁ לָהּ רֶגֶל שֶׁיּוֹרֶדֶת מִתַּחַת לַשּׁוּרָה"])]),
+          el("div", {}, [rashi("ם"), el("small", {}, ["מֵם סוֹפִית — סְגוּרָה, יוֹשֶׁבֶת עַל הַשּׁוּרָה"])])
         ]),
         el("button", { class: "btn primary big", onclick: run }, ["הֵבַנְתִּי — לַתַּרְגּוּל!"])
       ]));
@@ -183,7 +281,7 @@ window.Games = (function () {
         qs.push({
           prompt: (n) => n.appendChild(el("div", { class: "big-letter" }, [rashi(c)])),
           options: options.map(o => ({ node: el("span", { class: "name" }, [o.t]), ok: o.c === c })),
-          tip: c === "ס" ? "זוֹ סָמֶךְ — לַמְרוֹת שֶׁנִּרְאֵית כְּמוֹ ם" : "זוֹ מֵם סוֹפִית — לַמְרוֹת שֶׁנִּרְאֵית כְּמוֹ ס",
+          tip: c === "ס" ? "זוֹ סָמֶךְ — יֵשׁ לָהּ רֶגֶל שֶׁיּוֹרֶדֶת מִתַּחַת לַשּׁוּרָה" : "זוֹ מֵם סוֹפִית — סְגוּרָה, בְּלִי רֶגֶל",
           onResult: (ok) => State.recordResult(c, ok)
         });
       }
@@ -191,40 +289,61 @@ window.Games = (function () {
     }
   }
 
-  /* --- 4. הַתְאָמָה: רָשִׁ״י ↔ מְרֻבָּע --- */
+  /* --- 4. מֵרוֹץ הַהַתְאָמָה — כָּל 27 עַל לוּחַ אֶחָד ---
+     לא בריכה חלקית: כל 27 הסימנים. שכבת האתגר (דקה/שלוש פסילות)
+     משותפת לכל המשימות — ראה challenge() למעלה. */
   function match(game, world) {
+    const chars = ALL_CHARS();
     frame(game, world, (body) => {
-      const chars = pick(poolChars(game.pool), 5);
-      body.appendChild(el("p", { class: "lead dim" }, ["לַחַץ עַל אוֹת רָשִׁ״י, וְאָז עַל הַתְּאוֹמָה הַמְּרֻבַּעַת שֶׁלָּהּ."]));
-      const rCol = el("div", { class: "mcol" }), sCol = el("div", { class: "mcol" });
+      let sel = null, matched = 0, over = false;
+
+      body.appendChild(el("p", { class: "lead dim" }, [
+        "כָּל " + chars.length + " הַסִּימָנִים עַל הַלּוּחַ. לַחַץ עַל אוֹת רָשִׁ״י, וְאָז עַל הַתְּאוֹמָה הַמְּרֻבַּעַת שֶׁלָּהּ."
+      ]));
+      const ch = challenge(body, () => end(false, "נִגְמַר הַזְּמַן"), { pairs: chars.length });
       const status = el("div", { class: "tip" });
-      let sel = null, matched = 0;
+      const grid = el("div", { class: "race-grid" });
+      body.appendChild(grid); body.appendChild(status);
+      const start = el("button", { class: "btn primary big", onclick: begin }, ["הַתְחֵל ⏱ דַּקָּה"]);
+      body.appendChild(start);
 
-      function tile(c, side) {
-        const t = el("button", { class: "mtile" + (side === "r" ? " rashi-tile" : "") }, [side === "r" ? rashi(c) : square(c)]);
-        t.addEventListener("click", () => tap(side, c, t));   // מאזין יחיד — בלי כפילות
-        return t;
-      }
-      shuffle(chars).forEach(c => rCol.appendChild(tile(c, "r")));
-      shuffle(chars).forEach(c => sCol.appendChild(tile(c, "s")));
-      body.appendChild(el("div", { class: "match-grid" }, [rCol, sCol]));
-      body.appendChild(status);
+      shuffle([...chars.map(c => ({ c, side: "r" })), ...chars.map(c => ({ c, side: "s" }))])
+        .forEach(t => {
+          const b = el("button", { class: "mtile" + (t.side === "r" ? " rashi-tile" : "") },
+            [t.side === "r" ? rashi(t.c) : square(t.c)]);
+          b.addEventListener("click", () => tap(t, b));
+          grid.appendChild(b);
+        });
 
-      function tap(side, c, btn) {
-        if (btn.classList.contains("gone")) return;
+      let running = false;
+      function begin() { start.remove(); running = true; grid.classList.add("live"); ch.start(); }
+      function tap(t, btn) {
+        if (!running || over || btn.classList.contains("gone")) return;
         Audio2.sfx.tap();
-        if (!sel) { sel = { side, c, btn }; btn.classList.add("sel"); status.textContent = "עַכְשָׁו לַחַץ עַל הַתְּאוֹמָה שֶׁלָּהּ ↔"; return; }
-        if (sel.btn === btn) { btn.classList.remove("sel"); sel = null; status.textContent = ""; return; }
-        if (sel.side !== side && sel.c === c) {
-          [sel.btn, btn].forEach(b => { b.classList.remove("sel"); b.classList.add("gone"); });
-          Audio2.sfx.correct(); Audio2.speak(NAME(c)); State.recordResult(c, true);
-          matched++; sel = null; status.textContent = "";
-          if (matched === chars.length) { status.textContent = "כָּל הַכָּבוֹד!"; setTimeout(() => finish(game, world, chars.length, chars.length), 600); }
+        if (!sel) { sel = { t, btn }; btn.classList.add("sel"); return; }
+        if (sel.btn === btn) { btn.classList.remove("sel"); sel = null; return; }
+        if (sel.t.side !== t.side && sel.t.c === t.c) {
+          [sel.btn, btn].forEach(x => { x.classList.remove("sel"); x.classList.add("gone"); });
+          Audio2.sfx.correct(); State.recordResult(t.c, true);
+          matched++; sel = null; ch.paint(matched);
+          if (matched === chars.length) return end(true);
         } else {
-          const bad = [sel.btn, btn]; bad.forEach(b => b.classList.add("shake"));
-          Audio2.sfx.wrong(); sel.btn.classList.remove("sel"); sel = null; status.textContent = "";
-          setTimeout(() => bad.forEach(b => b.classList.remove("shake")), 500);
+          const bad = [sel.btn, btn];
+          bad.forEach(x => x.classList.add("shake"));
+          Audio2.sfx.wrong(); State.recordResult(sel.t.c, false);
+          sel.btn.classList.remove("sel"); sel = null;
+          const dead = ch.strike(); ch.paint(matched);
+          status.textContent = "פְּסִילָה " + ch.strikes + " מִתּוֹךְ 3";
+          setTimeout(() => bad.forEach(x => x.classList.remove("shake")), 450);
+          if (dead) return end(false, "שָׁלוֹשׁ פְּסִילוֹת");
         }
+      }
+      function end(won, why) {
+        if (over) return; over = true; running = false; ch.stop();
+        scoreCard(game, world, {
+          won, why, ch, base: won ? 20 : matched,
+          rows: [["הַתְאָמוֹת", matched + "/" + chars.length]]
+        });
       }
     });
   }
@@ -370,7 +489,9 @@ window.Games = (function () {
 
   const TYPES = { intro, identify, contrast, swap, match, readword, fill, readpassage, arcade };
   function play(game, world) {
+    /* טיפוסי חידה מנותבים למנוע החידות (riddles.js) */
+    if (window.Riddles && window.Riddles.TYPES[game.type]) return window.Riddles.play(game, world);
     (TYPES[game.type] || identify)(game, world);
   }
-  return { play };
+  return { play, finish, runMC, frame, progressDots, challenge, scoreCard, CH_LIMIT, CH_STRIKES };
 })();
