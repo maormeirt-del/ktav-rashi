@@ -131,9 +131,11 @@ window.WORLDS = [
     games: [
       { id: "w3-swap", type: "r-family", title: "הַזּוּג שֶׁמַּפִּיל אֶת כֻּלָּם", emoji: "🔀", fams: ["sm"] },
       { id: "w3-grid", type: "r-grid", title: "סַמֵּן כָּל סָמֶךְ. סְפֹר.", emoji: "🎯", fam: "sm", target: "ס" },
-      { id: "w3-star", type: "r-star", title: "הַהַפְתָּעָה", emoji: "✡️" },
+      /* 54 סמ״כים מתוך 195 תאים — דקה כאן היא ~1.1 שנ׳ לכל מציאה כולל סריקה.
+         זו לא משימה בגודל של 6 שאלות רב-ברירה, ולכן 100 שניות. */
+      { id: "w3-star", type: "r-star", title: "הַהַפְתָּעָה", emoji: "✡️", limit: 100 },
       { id: "w3-mat",  type: "r-family", title: "מַטְרִיצַת ו · ז · ן · ץ · ך", emoji: "⬇️", fams: ["vzntzk"] },
-      { id: "w3-det",  type: "r-detective", title: "תִּיק כָּל הַכְּתָב", emoji: "🕵️", pool: "all", boss: true }
+      { id: "w3-det",  type: "r-detective", title: "תִּיק כָּל הַכְּתָב", emoji: "🕵️", pool: "all", boss: true, limit: 90 }
     ] },
 
   { id: "w4", title: "אוֹת נֶעֶלְמָה", emoji: "🔵", hue: 210,
@@ -158,7 +160,7 @@ window.WORLDS = [
       { id: "w5h-ab",  type: "r-abbr", title: "12 רָאשֵׁי הַתֵּבוֹת", emoji: "🔑", set: "abbr" },
       { id: "w5h-ger", type: "r-abbr", title: "קִצּוּרֵי גֶּרֶשׁ", emoji: "׳", set: "geresh" },
       { id: "w5h-nus", type: "r-abbr", title: "סִימָנֵי נֻסָּח", emoji: "📝", set: "nusach" },
-      { id: "w5h-all", type: "r-abbr", title: "הַכֹּל בְּיַחַד", emoji: "🧠", set: "all" }
+      { id: "w5h-all", type: "r-abbr", title: "הַכֹּל בְּיַחַד", emoji: "🧠", set: "all", tries: 4 }
     ] },
 
   { id: "w6", title: "בְּלִי רְמָזִים", emoji: "🟠", hue: 25,

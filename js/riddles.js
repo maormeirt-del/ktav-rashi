@@ -228,7 +228,8 @@ window.Riddles = (function () {
 
       Games.frame(game, world, (body) => {
         // השעון והפסילות נמשכים על פני כל חמש החידות, לא מתאפסים בכל אחת
-        if (!ch) ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"));
+        if (!ch) ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
+          { tries: Games.triesFor(game, world), limit: game.limit });
         else body.appendChild(ch.hud);
         const head = el("div", { class: "det-head" }, [
           el("span", {}, ["חִידָה " + (idx + 1) + " מִתּוֹךְ " + targets.length]),
@@ -352,7 +353,7 @@ window.Riddles = (function () {
         if (over) return; over = true; ch.stop();
         Games.scoreCard(game, world, { won: false, why: "נִגְמַר הַזְּמַן", ch, base: 0,
           rows: [["הַקֶּטַע", p.src]] });
-      });
+      }, { tries: Games.triesFor(game, world), limit: game.limit });
       body.appendChild(riddleCard([
         el("div", { class: "src" }, [p.src]),
         ask("הַפַּעַם אֵין רְמָזִים. קְרָא, וְאָז עֲנֵה מָה כָּתוּב כָּאן."),
@@ -398,7 +399,8 @@ window.Riddles = (function () {
     let found = 0, over = false, ch = null;
 
     Games.frame(game, world, (body) => {
-      ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"), { pairs: hits });
+      ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
+        { pairs: hits, tries: Games.triesFor(game, world), limit: game.limit });
       body.appendChild(riddleCard([
         el("div", { class: "fam-tag" }, [fam.name]),
         el("p", { class: "ww-why" }, [fam.rule]),
@@ -453,7 +455,8 @@ window.Riddles = (function () {
     let found = 0, over = false, ch = null;
 
     Games.frame(game, world, (body) => {
-      ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"), { pairs: total });
+      ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
+        { pairs: total, tries: Games.triesFor(game, world), limit: game.limit });
       body.appendChild(riddleCard([
         ask("בָּרֶשֶׁת הַזֹּאת מֻחְבֵּאת צוּרָה."),
         el("p", { class: "ww-why" }, ["הִיא תִּתְגַּלֶּה רַק אִם תְּסַמֵּן נָכוֹן: כָּל סָמֶ״ךְ, וְאַף מֵם סוֹפִית. יֵשׁ " + total + " סָמֶ״כִים."])
