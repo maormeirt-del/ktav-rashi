@@ -43,7 +43,10 @@ window.Games = (function () {
       el("div", { class: "done-title" }, [score === total ? "מֻשְׁלָם!" : "כָּל הַכָּבוֹד!"]),
       el("div", { class: "done-score" }, [`${score}/${total} נְכוֹנוֹת`]),
       first ? el("div", { class: "done-note" }, ["+" + (8 + Math.round((score / Math.max(1, total)) * 8)) + " נְקֻדּוֹת"]) : null,
-      el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => App.world(world.id)) }, ["הַמְשֵׁךְ"])
+      el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => {
+        const n = nextTask(game, world);
+        n ? play(n.g, n.w) : App.world(world.id);
+      }) }, ["בּוֹא נַתְחִיל ›"])
     ]);
     UI.burst(); Audio2.sfx.reward();
     UI.setScreen(el("div", { class: "game center" }, [inner]));
@@ -113,6 +116,17 @@ window.Games = (function () {
     };
   }
 
+  /* המשימה הבאה ברצף — ממשיכה גם אל תוך העולם הבא.
+     הילד לא צריך לחזור למפה, לבחור, ולהיזכר איפה הוא היה. */
+  function nextTask(game, world) {
+    const ws = window.WORLDS;
+    const wi = ws.findIndex(w => w.id === world.id);
+    const gi = world.games.findIndex(g => g.id === game.id);
+    if (gi > -1 && gi + 1 < world.games.length) return { g: world.games[gi + 1], w: world };
+    for (let i = wi + 1; i < ws.length; i++) if (ws[i].games.length) return { g: ws[i].games[0], w: ws[i] };
+    return null;
+  }
+
   /* כרטיס סיום אחיד — אותה מתמטיקה בכל משימה */
   function scoreCard(game, world, o) {
     const timeBonus = o.won ? o.ch.left : 0;
@@ -128,6 +142,7 @@ window.Games = (function () {
       ["נִסְיוֹנוֹת נוֹסָפִים", o.ch.strikes + " מִתּוֹךְ " + o.ch.max]
     ]);
     const perfect = o.won && o.ch.strikes === 0;
+    const nxt = nextTask(game, world);
     const card = el("div", { class: "done-card race-done" }, [
       el("div", { class: "done-emoji" }, [o.won ? (perfect ? "🏆" : "🎉") : "⏱"]),
       el("div", { class: "done-title" }, [o.won ? (perfect ? "מֻשְׁלָם, בְּלִי טָעוּת אַחַת!" : "סִיַּמְתָּ!") : (o.why || "נִגְמַר")]),
@@ -141,8 +156,12 @@ window.Games = (function () {
       el("div", { class: "done-score" }, ["✦ " + total + " נְקֻדּוֹת"]),
       el("div", { class: "race-actions" }, [
         el("button", { class: "btn ghost", onclick: () => play(game, world) }, ["🔁 שׁוּב"]),
-        el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => App.world(world.id)) }, ["הַמְשֵׁךְ"])
-      ])
+        nxt
+          ? el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => play(nxt.g, nxt.w)) },
+              [(nxt.w.id !== world.id ? nxt.w.emoji + " " + nxt.w.title : nxt.g.title) + " ›"])
+          : el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => App.world(world.id)) }, ["סִיַּמְתָּ הַכֹּל 🏆"])
+      ]),
+      el("button", { class: "map-link", onclick: () => UI.drainRewards(() => App.world(world.id)) }, ["חֲזָרָה לַמַּפָּה"])
     ]);
     if (o.won) { UI.burst(); Audio2.sfx.reward(); }
     UI.setScreen(el("div", { class: "game center" }, [card]));
@@ -195,7 +214,7 @@ window.Games = (function () {
           btn.classList.add("ok"); score++; setDot(i, true); Audio2.sfx.correct();
           q.onResult && q.onResult(true);
           tip.innerHTML = ""; if (q.tip) tip.textContent = q.tip;
-          setTimeout(() => { i++; show(); }, 780);
+          setTimeout(() => { i++; show(); }, 520);
           return;
         }
         /* טעות אינה סוף. מראים בדיוק מה ההבדל, ונותנים ניסיון נוסף. */
@@ -523,5 +542,5 @@ window.Games = (function () {
     if (window.Riddles && window.Riddles.TYPES[game.type]) return window.Riddles.play(game, world);
     (TYPES[game.type] || identify)(game, world);
   }
-  return { play, finish, runMC, frame, progressDots, challenge, scoreCard, triesFor, CH_LIMIT, CH_STRIKES };
+  return { play, finish, runMC, frame, progressDots, challenge, scoreCard, triesFor, nextTask, CH_LIMIT, CH_STRIKES };
 })();

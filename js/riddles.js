@@ -77,10 +77,13 @@ window.Riddles = (function () {
   }
   function clueLine(txt, n) {
     return el("div", { class: "clue" }, [
-      el("span", { class: "clue-n" }, ["רֶמֶז " + n]),
+      n ? el("span", { class: "clue-n" }, ["רֶמֶז " + n]) : null,
       el("span", { class: "clue-t" }, [txt])
     ]);
   }
+  /* הרמז הקצר — שורה אחת, בלי תווית, בלי "מי אני?". זה כל מה
+     שהתלמיד קורא בתרגול. הנוסח המלא שמור לרגע הטעות. */
+  function hint(c) { return el("div", { class: "hint-chip" }, [window.shortOf(c)]); }
   function ask(txt) { return el("div", { class: "riddle-ask" }, [txt]); }
 
   function poolChars(name) {
@@ -156,9 +159,8 @@ window.Riddles = (function () {
         prompt: (n) => {
           n.appendChild(riddleCard([
             el("div", { class: "big-letter" }, [rashi(c)]),
-            clueLine(cl[cl.length - 1], "מַכְרִיעַ"),
-            ask("אָז מִי אֲנִי?")
-          ]));
+            hint(c)
+          ], "tight"));
         },
         options: options.map(o => ({ node: el("span", { class: "name" }, [o.t]), ok: o.ok, c: o.c })),
         explain: (o) => whyWrong(o.c, c),
@@ -181,10 +183,8 @@ window.Riddles = (function () {
         prompt: (n) => {
           n.appendChild(riddleCard([
             el("div", { class: "fam-tag" }, [f.name]),
-            clueLine(cl[1], "א׳"),
-            clueLine(cl[2], "ב׳"),
-            ask("אֵיזוֹ מֵהֶן אֲנִי?")
-          ]));
+            hint(c)
+          ], "tight"));
         },
         options: shuffle(f.chars).map(x => ({
           node: el("div", { class: "big-letter sm" }, [rashi(x)]), ok: x === c, c: x
@@ -235,7 +235,10 @@ window.Riddles = (function () {
           el("span", {}, ["חִידָה " + (idx + 1) + " מִתּוֹךְ " + targets.length]),
           el("span", { class: "det-worth" }, ["שָׁוָה עַכְשָׁו: ", el("b", {}, ["5"]), " ", el("i", { class: "pts-w" }, [pts(5)])])
         ]);
-        const clues = el("div", { class: "clues" }, [clueLine(cl[0], "רִאשׁוֹן")]);
+        /* קצר → קצר → מלא. הרמז הראשון רק ממקם באשכול, השני הוא
+           הסימן בשתי מילים, ורק השלישי מסביר בנוסח מלא. */
+        const ladder = [fam ? fam.name : cl[0], window.shortOf(c), cl[cl.length - 1]];
+        const clues = el("div", { class: "clues" }, [clueLine(ladder[0], "")]);
         const more = el("button", { class: "btn ghost more-clue", onclick: addClue }, ["🔍 עוֹד רֶמֶז (עוֹלֶה נְקֻדּוֹת)"]);
         const grid = el("div", { class: "det-opts" });
         const tip = el("div", { class: "tip" });
@@ -249,13 +252,13 @@ window.Riddles = (function () {
 
         function worth() { return shown === 1 ? 5 : shown === 2 ? 3 : 1; }
         function addClue() {
-          if (locked || shown >= cl.length) return;
-          clues.appendChild(clueLine(cl[shown], shown === 1 ? "שֵׁנִי" : "מַכְרִיעַ"));
+          if (locked || shown >= ladder.length) return;
+          clues.appendChild(clueLine(ladder[shown], ""));
           shown++;
           head.querySelector(".det-worth b").textContent = String(worth());
           head.querySelector(".pts-w").textContent = pts(worth());
           Audio2.sfx.tap();
-          if (shown >= cl.length) more.remove();
+          if (shown >= ladder.length) more.remove();
         }
         function choose(x, btn) {
           if (over || btn.classList.contains("locked")) return;
@@ -300,10 +303,8 @@ window.Riddles = (function () {
         prompt: (n) => {
           n.appendChild(riddleCard([
             el("div", { class: "big-word fill", html: '<span class="rashi">' + shown + "</span>" }),
-            clueLine("הַמִּלָּה הַזֹּאת הִיא: " + w.m + ".", "הַמִּלָּה"),
-            cl.length ? clueLine(cl[cl.length - 1], "הָאוֹת") : null,
-            ask("אֵיזוֹ אוֹת נֶעֶלְמָה?")
-          ]));
+            el("div", { class: "hint-chip" }, [w.m])
+          ], "tight"));
         },
         options: options.map(o => ({ node: el("div", { class: "big-letter sm" }, [rashi(o.c)]), ok: o.ok, c: o.c })),
         explain: (o) => whyWrong(o.c, answer),
@@ -329,9 +330,8 @@ window.Riddles = (function () {
           n.appendChild(riddleCard([
             el("div", { class: "src" }, [p.src]),
             el("div", { class: "passage masked", html: '<span class="rashi">' + masked + "</span>" }),
-            clueLine(p.tr, "מָה הַקֶּטַע אוֹמֵר"),
-            ask("אֵיזוֹ מִלָּה נֶעֶלְמָה?")
-          ]));
+            el("div", { class: "hint-chip wrap" }, [p.tr])
+          ], "tight"));
         },
         options: options.map(o => ({ node: el("span", { class: "wopt" }, [rashi(o.t)]), ok: o.ok, t: o.t })),
         explain: (o) => whyWrongText(o.t, answer, "לְפִי מָה שֶׁהַקֶּטַע אוֹמֵר: " + p.tr),
@@ -356,7 +356,6 @@ window.Riddles = (function () {
       }, { tries: Games.triesFor(game, world), limit: game.limit });
       body.appendChild(riddleCard([
         el("div", { class: "src" }, [p.src]),
-        ask("הַפַּעַם אֵין רְמָזִים. קְרָא, וְאָז עֲנֵה מָה כָּתוּב כָּאן."),
         el("div", { class: "passage" }, [rashi(p.t)])
       ]));
       body.appendChild(el("button", { class: "btn primary big", onclick: solve }, ["קָרָאתִי — לַחִידָה ›"]));
@@ -402,10 +401,12 @@ window.Riddles = (function () {
       ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
         { pairs: hits, tries: Games.triesFor(game, world), limit: game.limit });
       body.appendChild(riddleCard([
-        el("div", { class: "fam-tag" }, [fam.name]),
-        el("p", { class: "ww-why" }, [fam.rule]),
-        ask("סַמֵּן כָּל " + NAME(target) + " בָּרֶשֶׁת. יֵשׁ " + hits + ".")
-      ]));
+        el("div", { class: "task-line" }, [
+          el("b", {}, ["סַמֵּן כָּל "]), rashi(target),
+          el("span", {}, [" · " + NAME(target) + " · יֵשׁ " + hits])
+        ]),
+        el("div", { class: "hint-chip" }, [window.shortOf(target)])
+      ], "tight"));
       const status = el("div", { class: "tip" });
       body.appendChild(status);
       const g = el("div", { class: "scan-grid" });
@@ -458,9 +459,12 @@ window.Riddles = (function () {
       ch = Games.challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
         { pairs: total, tries: Games.triesFor(game, world), limit: game.limit });
       body.appendChild(riddleCard([
-        ask("בָּרֶשֶׁת הַזֹּאת מֻחְבֵּאת צוּרָה."),
-        el("p", { class: "ww-why" }, ["הִיא תִּתְגַּלֶּה רַק אִם תְּסַמֵּן נָכוֹן: כָּל סָמֶ״ךְ, וְאַף מֵם סוֹפִית. יֵשׁ " + total + " סָמֶ״כִים."])
-      ]));
+        el("div", { class: "task-line" }, [
+          el("b", {}, ["סַמֵּן כָּל "]), rashi("ס"),
+          el("span", {}, [" · יֵשׁ " + total + " · מֻחְבֵּאת כָּאן צוּרָה"])
+        ]),
+        el("div", { class: "hint-chip" }, [window.shortOf("ס")])
+      ], "tight"));
       const status = el("div", { class: "tip" });
       body.appendChild(status);
       const g = el("div", { class: "star-grid" });
@@ -508,9 +512,8 @@ window.Riddles = (function () {
       return {
         prompt: (n) => n.appendChild(riddleCard([
           el("div", { class: "abbr-big" }, [rashi(a.f)]),
-          a.n ? clueLine("מוֹפִיעַ " + a.n + " פְּעָמִים בְּרָשִׁ״י. אִי אֶפְשָׁר לְדַלֵּג עָלָיו.", "תְּדִירוּת") : null,
-          ask("מָה זֶה אוֹמֵר?")
-        ])),
+          a.n ? el("div", { class: "hint-chip" }, ["×" + a.n + " בְּרָשִׁ״י"]) : null
+        ], "tight")),
         options: options.map(o => ({ node: el("span", { class: "name" }, [o.a.e]), ok: o.ok, a: o.a })),
         explain: (o) => whyWrongText(o.a.f, a.f, o.a.f + " = " + o.a.e + ". " + a.f + " = " + a.e + (a.note ? " (" + a.note + ")" : "") + "."),
         tip: a.note ? a.f + " — " + a.note : null,
