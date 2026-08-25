@@ -486,3 +486,35 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .score-rows.bonus .score-row b { color: #2fa463; }
 .race-actions { display: flex; gap: 8px; margin-top: 16px; }
 .race-actions .btn { flex: 1; }
+
+
+/* ===========================================================
+   "אֵיפֹה טָעִיתִי" — טעות היא רגע לימוד, לא עונש.
+   מראים את מה שנבחר מול הנכון, ואת הסימן שמבדיל ביניהם.
+   =========================================================== */
+.whywrong { text-align: center; background: hsla(42,80%,55%,.14);
+  border: 2px solid var(--gold); border-radius: 16px; padding: 14px 12px; margin-top: 6px; }
+.ww-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.ww-chip { display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border-radius: 12px; padding: 6px 12px; min-width: 60px; }
+.ww-chip.bad  { background: #fdecea; border: 2px solid #e05a4e; }
+.ww-chip.good { background: #e9f9ef; border: 2px solid #2fa463; }
+/* גודל גליף = פתירות. ב-2.4rem אי אפשר לראות את הפינה של ד מול ר,
+   וההסבר הופך לחסר תועלת בדיוק בזוג שבגללו הוא נכתב. */
+.ww-chip .ww-glyph .rashi, .ww-chip .rashi { font-size: 3.6rem; line-height: 1.05; color: var(--ink); }
+.ww-chip small { font-size: .72rem; font-weight: 700; color: var(--muted); }
+.ww-row.txt .ww-chip .rashi { font-size: 1.5rem; }
+.ww-vs { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; color: var(--muted); }
+.ww-why { font-size: .92rem; line-height: 1.6; margin-top: 10px; font-weight: 600; text-align: right; }
+.retry { display: block; margin-top: 10px; font-family: var(--font-display);
+  font-size: 1.05rem; color: var(--accent); }
+.tip { min-height: 20px; }
+.tip .whywrong { margin-top: 10px; }
+.race-hud .hud-tries.warn { border-color: var(--accent); color: var(--accent); }
+
+/* במרוץ ההסבר צריך להיות קומפקטי — הוא יושב מעל לוח של 54 אריחים */
+.race-grid + .tip, .tip:has(+ .race-grid) { margin: 0 0 10px; }
+.tip:has(+ .race-grid) .whywrong { padding: 10px; margin-top: 0; }
+.tip:has(+ .race-grid) .ww-chip .rashi { font-size: 2.9rem; }
+.tip:has(+ .race-grid) .ww-why { font-size: .86rem; margin-top: 7px; }
+.tip:has(+ .race-grid) .retry { margin-top: 6px; font-size: .98rem; }

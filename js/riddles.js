@@ -21,6 +21,56 @@ window.Riddles = (function () {
   /* "1 נקודות" זו עברית שבורה — ולנער בן 15 זה בדיוק מה שמסגיר תוכנה חובבנית */
   const pts = (n) => n === 1 ? "נְקֻדָּה" : "נְקֻדּוֹת";
 
+
+  /* ===========================================================
+     "אֵיפֹה טָעִיתִי" — הרכיב שהופך טעות לרגע לימוד.
+     לא "נפסלת", אלא: זו האות שבחרת, זו הנכונה, וזה הסימן
+     שמבדיל ביניהן. בדיוק הסימן, לא "הן דומות".
+     =========================================================== */
+  function letterChip(c, kind) {
+    return el("span", { class: "ww-chip " + kind }, [
+      el("span", { class: "ww-glyph" }, [rashi(c)]),
+      el("small", {}, [NAME(c)])
+    ]);
+  }
+  function decisive(c) {
+    const cl = (CLUES()[c] || {}).clues;
+    return cl ? cl[cl.length - 1] : null;
+  }
+  function whyWrong(chosen, correct) {
+    const d = decisive(correct);
+    return el("div", { class: "whywrong" }, [
+      el("div", { class: "ww-row" }, [
+        letterChip(chosen, "bad"), el("span", { class: "ww-vs" }, ["≠"]), letterChip(correct, "good")
+      ]),
+      d ? el("p", { class: "ww-why" }, [NAME(correct) + " אוֹמֶרֶת: " + d]) : null,
+      el("b", { class: "retry" }, ["נַסֵּה שׁוּב"])
+    ]);
+  }
+  /* למרוץ ההתאמה: שני אריחים שאינם זוג */
+  function pairHint(a, b) {
+    return el("div", { class: "whywrong" }, [
+      el("div", { class: "ww-row" }, [
+        letterChip(a, "bad"), el("span", { class: "ww-vs" }, ["≠"]), letterChip(b, "bad")
+      ]),
+      el("p", { class: "ww-why" }, ["אֵלֶּה שְׁתֵּי אוֹתִיּוֹת שׁוֹנוֹת. " +
+        (decisive(a) ? NAME(a) + " אוֹמֶרֶת: " + decisive(a) : "")]),
+      el("b", { class: "retry" }, ["נַסֵּה שׁוּב"])
+    ]);
+  }
+  /* הסבר לחידת מילה/שורה, שבהן האפשרויות אינן אותיות בודדות */
+  function whyWrongText(chosenTxt, correctTxt, note) {
+    return el("div", { class: "whywrong" }, [
+      el("div", { class: "ww-row txt" }, [
+        el("span", { class: "ww-chip bad" }, [rashi(chosenTxt)]),
+        el("span", { class: "ww-vs" }, ["≠"]),
+        el("span", { class: "ww-chip good" }, [rashi(correctTxt)])
+      ]),
+      note ? el("p", { class: "ww-why" }, [note]) : null,
+      el("b", { class: "retry" }, ["נַסֵּה שׁוּב"])
+    ]);
+  }
+
   /* מעטפת אחידה לכל חידה: כותרת "חִידָה מס׳ X" + גוף */
   function riddleCard(kids, cls) {
     return el("div", { class: "riddle " + (cls || "") }, kids);
@@ -100,8 +150,8 @@ window.Riddles = (function () {
     const order = shuffle([...new Set([...due, ...pool])]).slice(0, Q);
     const qs = order.map(c => {
       const cl = CLUES()[c].clues;
-      const distract = shuffle(pool.filter(x => x !== c)).slice(0, 3).map(NAME);
-      const options = shuffle([{ t: NAME(c), ok: true }, ...distract.map(t => ({ t, ok: false }))]);
+      const distract = shuffle(pool.filter(x => x !== c)).slice(0, 3);
+      const options = shuffle([{ t: NAME(c), c, ok: true }, ...distract.map(x => ({ t: NAME(x), c: x, ok: false }))]);
       return {
         prompt: (n) => {
           n.appendChild(riddleCard([
@@ -110,7 +160,8 @@ window.Riddles = (function () {
             ask("אָז מִי אֲנִי?")
           ]));
         },
-        options: options.map(o => ({ node: el("span", { class: "name" }, [o.t]), ok: o.ok })),
+        options: options.map(o => ({ node: el("span", { class: "name" }, [o.t]), ok: o.ok, c: o.c })),
+        explain: (o) => whyWrong(o.c, c),
         onResult: (ok) => { if (ok) Audio2.speak(NAME(c)); State.recordResult(c, ok); }
       };
     });
@@ -136,8 +187,9 @@ window.Riddles = (function () {
           ]));
         },
         options: shuffle(f.chars).map(x => ({
-          node: el("div", { class: "big-letter sm" }, [rashi(x)]), ok: x === c
+          node: el("div", { class: "big-letter sm" }, [rashi(x)]), ok: x === c, c: x
         })),
+        explain: (o) => whyWrong(o.c, c),
         tip: "זוֹ " + NAME(c) + ".",
         onResult: (ok) => { State.recordResult(c, ok); if (ok) Audio2.speak(NAME(c)); }
       });
@@ -205,24 +257,25 @@ window.Riddles = (function () {
           if (shown >= cl.length) more.remove();
         }
         function choose(x, btn) {
-          if (locked || over) return; locked = true;
-          [...grid.children].forEach(n => n.classList.add("locked"));
-          const ok = x === c;
-          let dead = false;
-          if (ok) {
+          if (over || btn.classList.contains("locked")) return;
+          if (x === c) {
+            locked = true;
+            [...grid.children].forEach(n => n.classList.add("locked"));
             btn.classList.add("ok"); score += worth(); Audio2.sfx.correct(); Audio2.speak(NAME(c));
-            tip.textContent = "כֵּן. זוֹ " + NAME(c) + ". +" + worth() + " " + pts(worth()) + ".";
-          } else {
-            btn.classList.add("bad"); Audio2.sfx.wrong();
-            [...grid.children].forEach((n, i) => { if (opts[i] === c) n.classList.add("ok"); });
-            tip.textContent = "לֹא. זוֹ " + NAME(c) + " — " + cl[cl.length - 1];
-            dead = ch.strike();
+            tip.innerHTML = ""; tip.textContent = "כֵּן. זוֹ " + NAME(c) + ". +" + worth() + " " + pts(worth()) + ".";
+            State.recordResult(c, true);
+            setTimeout(() => { idx++; step(); }, 1100);
+            return;
           }
-          State.recordResult(c, ok);
-          setTimeout(() => {
-            if (dead) return end(false, "שָׁלוֹשׁ פְּסִילוֹת");
-            idx++; step();
-          }, ok ? 1100 : 2400);
+          /* טעות בבלש לא מסיימת את התיק — מראים את ההבדל וממשיכים לנסות */
+          btn.classList.add("bad", "locked"); Audio2.sfx.wrong();
+          State.recordResult(c, false);
+          tip.innerHTML = ""; tip.appendChild(whyWrong(x, c));
+          if (ch.strike()) {
+            locked = true;
+            [...grid.children].forEach((n, i) => { n.classList.add("locked"); if (opts[i] === c) n.classList.add("ok"); });
+            setTimeout(() => end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת"), 2400);
+          }
         }
       });
     }
@@ -251,7 +304,8 @@ window.Riddles = (function () {
             ask("אֵיזוֹ אוֹת נֶעֶלְמָה?")
           ]));
         },
-        options: options.map(o => ({ node: el("div", { class: "big-letter sm" }, [rashi(o.c)]), ok: o.ok })),
+        options: options.map(o => ({ node: el("div", { class: "big-letter sm" }, [rashi(o.c)]), ok: o.ok, c: o.c })),
+        explain: (o) => whyWrong(o.c, answer),
         onResult: (ok) => { State.recordResult(answer, ok); if (ok) { Audio2.speak(w.t); UI.toast(w.t.replace(/[֑-ׇ]/g, "")); } }
       };
     });
@@ -278,7 +332,8 @@ window.Riddles = (function () {
             ask("אֵיזוֹ מִלָּה נֶעֶלְמָה?")
           ]));
         },
-        options: options.map(o => ({ node: el("span", { class: "wopt" }, [rashi(o.t)]), ok: o.ok })),
+        options: options.map(o => ({ node: el("span", { class: "wopt" }, [rashi(o.t)]), ok: o.ok, t: o.t })),
+        explain: (o) => whyWrongText(o.t, answer, "לְפִי מָה שֶׁהַקֶּטַע אוֹמֵר: " + p.tr),
         onResult: (ok) => { if (ok) { Audio2.speak(ps[wi] || ""); State.award(4); } }
       };
     });
@@ -326,5 +381,5 @@ window.Riddles = (function () {
     "r-open": open, "r-sign": sign, "r-family": family, "r-detective": detective,
     "r-word": word, "r-line": line, "r-fluent": fluent
   };
-  return { play: (g, w) => (TYPES[g.type] || sign)(g, w), TYPES };
+  return { play: (g, w) => (TYPES[g.type] || sign)(g, w), TYPES, whyWrong, pairHint, whyWrongText };
 })();

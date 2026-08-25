@@ -66,14 +66,16 @@ window.Games = (function () {
     const hud = el("div", { class: "race-hud" }, [
       el("span", { class: "hud hud-time" }, ["⏱ " + left]),
       opts.pairs ? el("span", { class: "hud hud-pairs" }, ["✓ 0/" + opts.pairs]) : null,
-      el("span", { class: "hud hud-strikes" }, ["✗ 0/" + CH_STRIKES])
+      el("span", { class: "hud hud-tries" }, ["🔁 " + CH_STRIKES])
     ]);
     host.appendChild(hud);
     function paint(pairsDone) {
       const t = hud.querySelector(".hud-time");
       t.textContent = "⏱ " + Math.max(0, left);
       t.classList.toggle("warn", left <= 10);
-      hud.querySelector(".hud-strikes").textContent = "✗ " + strikes + "/" + CH_STRIKES;
+      const tr = hud.querySelector(".hud-tries");
+      tr.textContent = "🔁 " + (CH_STRIKES - strikes);
+      tr.classList.toggle("warn", CH_STRIKES - strikes <= 1);
       const p = hud.querySelector(".hud-pairs");
       if (p && pairsDone != null) p.textContent = "✓ " + pairsDone + "/" + opts.pairs;
     }
@@ -106,12 +108,12 @@ window.Games = (function () {
 
     const rows = (o.rows || []).concat([
       ["זְמַן", o.ch.used + " שְׁנִיּוֹת"],
-      ["פְּסִילוֹת", o.ch.strikes + "/" + CH_STRIKES]
+      ["נִסְיוֹנוֹת נוֹסָפִים", o.ch.strikes + " מִתּוֹךְ " + CH_STRIKES]
     ]);
     const perfect = o.won && o.ch.strikes === 0;
     const card = el("div", { class: "done-card race-done" }, [
       el("div", { class: "done-emoji" }, [o.won ? (perfect ? "🏆" : "🎉") : "⏱"]),
-      el("div", { class: "done-title" }, [o.won ? (perfect ? "מֻשְׁלָם, בְּלִי פְּסִילָה אַחַת!" : "סִיַּמְתָּ!") : (o.why || "נִגְמַר")]),
+      el("div", { class: "done-title" }, [o.won ? (perfect ? "מֻשְׁלָם, בְּלִי טָעוּת אַחַת!" : "סִיַּמְתָּ!") : (o.why || "נִגְמַר")]),
       el("div", { class: "score-rows" }, rows.map(r =>
         el("div", { class: "score-row" }, [el("span", {}, [r[0]]), el("b", {}, [String(r[1])])]))),
       o.won ? el("div", { class: "score-rows bonus" }, [
@@ -168,23 +170,26 @@ window.Games = (function () {
       stage.appendChild(promptWrap); stage.appendChild(opts); stage.appendChild(tip);
 
       function choose(o, btn) {
-        if (over) return;
-        [...opts.children].forEach(c => c.classList.add("locked"));
-        let dead = false;
+        if (over || btn.classList.contains("locked")) return;
         if (o.ok) {
+          [...opts.children].forEach(c => c.classList.add("locked"));
           btn.classList.add("ok"); score++; setDot(i, true); Audio2.sfx.correct();
           q.onResult && q.onResult(true);
-        } else {
-          btn.classList.add("bad"); setDot(i, false); Audio2.sfx.wrong();
-          [...opts.children].forEach((c, ci) => { if (q.options[ci].ok) c.classList.add("ok"); });
-          q.onResult && q.onResult(false);
-          dead = ch.strike();
+          tip.innerHTML = ""; if (q.tip) tip.textContent = q.tip;
+          setTimeout(() => { i++; show(); }, 780);
+          return;
         }
-        if (q.tip) tip.textContent = q.tip;
-        setTimeout(() => {
-          if (dead) return end(false, "שָׁלוֹשׁ פְּסִילוֹת");
-          i++; show();
-        }, o.ok ? 780 : 1500);
+        /* טעות אינה סוף. מראים בדיוק מה ההבדל, ונותנים ניסיון נוסף. */
+        btn.classList.add("bad", "locked"); Audio2.sfx.wrong();
+        q.onResult && q.onResult(false);
+        tip.innerHTML = "";
+        tip.appendChild(q.explain ? q.explain(o) : el("b", { class: "retry" }, ["נַסֵּה שׁוּב"]));
+        if (ch.strike()) {
+          [...opts.children].forEach((c, ci) => { if (q.options[ci].ok) c.classList.add("ok"); });
+          [...opts.children].forEach(c => c.classList.add("locked"));
+          setDot(i, false);
+          setTimeout(() => end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת"), 2200);
+        }
       }
     }
     show();
@@ -303,7 +308,9 @@ window.Games = (function () {
       const ch = challenge(body, () => end(false, "נִגְמַר הַזְּמַן"), { pairs: chars.length });
       const status = el("div", { class: "tip" });
       const grid = el("div", { class: "race-grid" });
-      body.appendChild(grid); body.appendChild(status);
+      /* ההסבר יושב מעל הלוח: מתחת ל-54 אריחים הוא נופל מחוץ למסך,
+         והלומד לא רואה בדיוק את מה שנועד ללמד אותו. */
+      body.appendChild(status); body.appendChild(grid);
       const start = el("button", { class: "btn primary big", onclick: begin }, ["הַתְחֵל ⏱ דַּקָּה"]);
       body.appendChild(start);
 
@@ -328,14 +335,17 @@ window.Games = (function () {
           matched++; sel = null; ch.paint(matched);
           if (matched === chars.length) return end(true);
         } else {
-          const bad = [sel.btn, btn];
+          const a = sel.t, bad = [sel.btn, btn];
           bad.forEach(x => x.classList.add("shake"));
           Audio2.sfx.wrong(); State.recordResult(sel.t.c, false);
           sel.btn.classList.remove("sel"); sel = null;
           const dead = ch.strike(); ch.paint(matched);
-          status.textContent = "פְּסִילָה " + ch.strikes + " מִתּוֹךְ 3";
+          status.innerHTML = "";
+          status.appendChild(window.Riddles && Riddles.pairHint
+            ? Riddles.pairHint(a.c, t.c)
+            : el("b", { class: "retry" }, ["נַסֵּה שׁוּב"]));
           setTimeout(() => bad.forEach(x => x.classList.remove("shake")), 450);
-          if (dead) return end(false, "שָׁלוֹשׁ פְּסִילוֹת");
+          if (dead) return end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת");
         }
       }
       function end(won, why) {
