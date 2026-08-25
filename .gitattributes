@@ -1,0 +1,6 @@
+# הריפו הזה נוצר ממכונת Windows והקבצים על הדיסק היו CRLF בעוד HEAD שמור LF.
+# בלי הקובץ הזה כל rsync מהמקור מייצר קומיט של אלפי שורות רעש.
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.svg text eol=lf
