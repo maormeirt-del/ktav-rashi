@@ -305,15 +305,25 @@ window.Riddles = (function () {
       const answer = chars[idx];
       const cl = (CLUES()[answer] || {}).clues || [];
       const shown = chars.map((c, i) => i === idx ? '<b class="blank">◻</b>' : c).join("");
-      /* מסיח אסור ליצור מילה אמיתית אחרת. בלי הסינון הזה "תּוֹרָה" עם
-         ם חסרה מקבלת גם "מוֹרֶה" כתשובה נכונה — והתלמיד שצודק מסומן כטועה. */
+      /* שלושה סינונים על המסיחים, בסדר הזה:
+         1. אסור ליצור מילה אמיתית אחרת — אחרת יש שתי תשובות נכונות
+            ("תּוֹרָה" בלי ת מקבלת גם מ, כי "מוֹרֶה" קיימת).
+         2. אסור להפר את חוק האות הסופית — ם באמצע מילה היא לא מסיח,
+            היא מתנה: התלמיד פוסל אותה בלי להסתכל על הצורה בכלל.
+         3. עדיפות לאותיות מאותו אשכול — מסיח אקראי לא מלמד כלום,
+            מסיח מבלבל מאמן בדיוק את ההבחנה שקשה. */
       const WORDSET = new Set(window.WORDS.map(x => x.p));
+      const FINALS = "ךםןףץ";
+      const last = idx === w.p.length - 1 || w.p[idx + 1] === " ";
       const legal = window.LETTERS.map(l => l.c).filter(c => {
         if (c === answer) return false;
+        if (FINALS.indexOf(c) > -1 && !last) return false;          // סופית לא באמצע
         const alt = w.p.slice(0, idx) + c + w.p.slice(idx + 1);
         return !WORDSET.has(alt);
       });
-      const distract = pick(legal, 3);
+      const famChars = (window.familyOf(answer) || { chars: [] }).chars.filter(c => legal.includes(c));
+      const rest = legal.filter(c => !famChars.includes(c));
+      const distract = [...shuffle(famChars), ...shuffle(rest)].slice(0, 3);
       const options = shuffle([{ c: answer, ok: true }, ...distract.map(c => ({ c, ok: false }))]);
       return {
         prompt: (n) => {
