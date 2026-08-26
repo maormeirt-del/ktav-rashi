@@ -67,19 +67,33 @@ window.App = (function () {
   /* ---------------- בֵּית הַמִּדְרָשׁ ---------------- */
   const LIB_MAP = { chumash: "chumash", "mishna-brura": "halacha" };
   function beit() {
+    const pts = State.progress.points;
     const body = el("div", { class: "beitscr" });
     body.appendChild(el("h2", { class: "map-title" }, ["בֵּית הַמִּדְרָשׁ"]));
-    body.appendChild(el("p", { class: "sub-lead" }, ["טֶקְסְט אֲמִתִּי בִּכְתָב רָשִׁ״י — פָּסוּק וְהַפֵּרוּשׁ, שֻׁלְחָן עָרוּךְ וּמִשְׁנָה בְּרוּרָה."]));
+    body.appendChild(el("p", { class: "sub-lead" }, [`טֶקְסְט אֲמִתִּי בִּכְתָב רָשִׁ״י. הַסְּפָרִים נִפְתָּחִים לְפִי נְקֻדּוֹת — יֵשׁ לְךָ ✦ ${pts}.`]));
     const cards = el("div", { class: "beit-cards" });
+    /* נפתחים לפי נקודות, בדיוק כמו אולם המשחקים. הסדר הוא סדר הקושי
+       האמיתי: חומש מנוקד → שולחן ערוך → דף גמרא עם רש״י לא-מנוקד. */
     [
-      { kind: "chumash", icon: "📕", title: "חֻמָּשׁ עִם רָשִׁ״י", sub: "בְּרֵאשִׁית א׳–ג׳ — 80 פְּסוּקִים עִם רָשִׁ״י", hue: 355 },
-      { kind: "halacha", icon: "📔", title: "שֻׁלְחָן עָרוּךְ + מִשְׁנָה בְּרוּרָה", sub: "אֹרַח חַיִּים · סִימָנִים א׳–י״ב", hue: 210 }
-    ].forEach(c => cards.appendChild(
-      el("button", { class: "beit-card", style: `--hue:${c.hue}`, onclick: () => libraryReader(c.kind) }, [
-        el("span", { class: "bc-icon" }, [c.icon]),
-        el("span", { class: "bc-txt" }, [el("b", {}, [c.title]), el("small", {}, [c.sub])]),
-        el("span", { class: "bc-go" }, ["›"])
-      ])));
+      { kind: "chumash", icon: "📕", title: "חֻמָּשׁ עִם רָשִׁ״י", sub: "בְּרֵאשִׁית א׳–ג׳ — 80 פְּסוּקִים עִם רָשִׁ״י", hue: 355, unlock: 80 },
+      { kind: "halacha", icon: "📔", title: "שֻׁלְחָן עָרוּךְ + מִשְׁנָה בְּרוּרָה", sub: "אֹרַח חַיִּים · סִימָנִים א׳–י״ב", hue: 210, unlock: 300 },
+      /* הגמרא היא היעד של האפליקציה כולה — ולכן היא כאן, לא כתרגיל.
+         רש״י על הש״ס אינו מנוקד (וילנא), בניגוד לרש״י על החומש.
+         זה לא חוסר, זה הדף האמיתי. */
+      { kind: "gemara", icon: "📚", title: "גְּמָרָא · בָּבָא קַמָּא", sub: "ב׳ ע״א–ד׳ ע״א · הַדַּף עִם רָשִׁ״י", hue: 25, unlock: 700 }
+    ].forEach(c => {
+      const open = pts >= (c.unlock || 0);
+      const card = el("button", { class: "beit-card" + (open ? "" : " locked"), style: `--hue:${c.hue}`,
+        onclick: () => open ? libraryReader(c.kind)
+                            : UI.toast(`נִפְתָּח בְּ-${c.unlock} נְקֻדּוֹת (חָסֵר ${c.unlock - pts})`) }, [
+        el("span", { class: "bc-icon" }, [open ? c.icon : "🔒"]),
+        el("span", { class: "bc-txt" }, [el("b", {}, [c.title]), el("small", {}, [open ? c.sub : `נִפְתָּח בְּ-${c.unlock} נְקֻדּוֹת`])]),
+        el("span", { class: "bc-go" }, [open ? "›" : `${c.unlock} נק׳`])
+      ]);
+      if (!open) card.appendChild(el("span", { class: "bc-bar" }, [
+        el("i", { style: `width:${Math.round(Math.min(1, pts / c.unlock) * 100)}%` })]));
+      cards.appendChild(card);
+    });
     body.appendChild(cards);
     UI.page("beit", body);
     drain();
@@ -87,11 +101,11 @@ window.App = (function () {
 
   function libraryReader(kind, idx) {
     const data = window.LIBRARY[kind];
-    const items = kind === "chumash" ? data.perakim : data.simanim;
+    const items = data.perakim || data.simanim || data.dapim;
     idx = Math.min(Math.max(0, idx || 0), items.length - 1);
     const cur = items[idx];
     const daf = el("div", { class: "daf" });
-    const hero = el("div", { class: "daf-hero", style: `--hue:${kind === "chumash" ? 355 : 210}` }, [
+    const hero = el("div", { class: "daf-hero", style: `--hue:${kind === "chumash" ? 355 : kind === "gemara" ? 25 : 210}` }, [
       el("button", { class: "back", onclick: () => go("beit") }, ["›"]),
       el("span", { class: "dh-icon" }, [data.icon]),
       el("h2", {}, [data.title]), el("p", {}, [data.sub])
@@ -99,7 +113,7 @@ window.App = (function () {
     // בורר פרק/סימן
     const selector = el("div", { class: "lib-sel" }, items.map((it, i) =>
       el("button", { class: "lib-tab" + (i === idx ? " on" : ""), onclick: () => libraryReader(kind, i) },
-        [kind === "chumash" ? "פֶּרֶק " + it.n : "סִימָן " + it.n])));
+        [kind === "chumash" ? "פֶּרֶק " + it.n : kind === "gemara" ? it.n : "סִימָן " + it.n])));
     // כפתור-רמז גלובלי: החלף כתב רש״י ↔ מרובע
     let sq = false;
     const toggle = el("button", { class: "sq-toggle", onclick: () => {
@@ -109,7 +123,9 @@ window.App = (function () {
 
     const scroll = el("div", { class: "daf-scroll" });
     if (kind === "chumash") cur.units.forEach(u => scroll.appendChild(chumashUnit(u)));
+    else if (kind === "gemara") cur.units.forEach(u => scroll.appendChild(gemaraUnit(u)));
     else scroll.appendChild(halachaSiman(cur));
+    if (data.credit) scroll.appendChild(el("div", { class: "lib-credit" }, [data.credit]));
     daf.appendChild(scroll);
 
     UI.setScreen(el("div", { class: "page daf-page" }, [hero, selector, el("div", { class: "daf-tools" }, [toggle]), daf, UI.nav("beit")]));
@@ -133,6 +149,22 @@ window.App = (function () {
     });
     return box;
   }
+  /* יחידת דף: הגמרא במרובע כמו בדף אמיתי, ורש״י בכתב רש״י —
+     כי הוא מה שבאמת מודפס ככה. כפתור "הצג מרובע" הגלובלי חל גם כאן. */
+  function gemaraUnit(u) {
+    const box = el("div", { class: "unit gm-unit" });
+    box.appendChild(el("div", { class: "unit-ref" }, [u.ref]));
+    box.appendChild(el("div", { class: "gemara-txt", onclick: () => Audio2.speak(window.stripNikud(u.gemara), 0.85) }, [u.gemara]));
+    (u.rashi || []).forEach(r => {
+      box.appendChild(el("div", { class: "rashi-block" }, [
+        el("span", { class: "rlabel" }, ["רש״י"]),
+        r.d ? el("b", { class: "dibur rt" }, [r.d]) : null,
+        rashiTxt((r.d ? " — " : "") + r.t)
+      ]));
+    });
+    return box;
+  }
+
   function halachaSiman(s) {
     const box = el("div", { class: "siman" });
     box.appendChild(el("div", { class: "siman-head" }, [`סִימָן ${s.n} · ${s.title}`]));
