@@ -37,13 +37,19 @@ window.Riddles = (function () {
     const cl = (CLUES()[c] || {}).clues;
     return cl ? cl[cl.length - 1] : null;
   }
+  /* ההסבר חייב לענות על "לָמָּה לֹא מָה שֶׁבָּחַרְתִּי" — ולכן הוא מציג
+     את הסימן של *שתי* האותיות זו מול זו, לא מדקלם את הנכונה בלבד.
+     בלי זה נוצר אבסורד: בוחרים ש, ומקבלים הסבר על ההבדל בין ב ל-כ. */
   function whyWrong(chosen, correct) {
-    const d = decisive(correct);
+    const sc = window.shortOf(chosen), st = window.shortOf(correct);
     return el("div", { class: "whywrong" }, [
       el("div", { class: "ww-row" }, [
         letterChip(chosen, "bad"), el("span", { class: "ww-vs" }, ["≠"]), letterChip(correct, "good")
       ]),
-      d ? el("p", { class: "ww-why" }, [NAME(correct) + " אוֹמֶרֶת: " + d]) : null,
+      el("div", { class: "ww-cmp" }, [
+        sc ? el("div", { class: "cmp bad" }, [el("b", {}, [NAME(chosen)]), el("span", {}, [sc])]) : null,
+        st ? el("div", { class: "cmp good" }, [el("b", {}, [NAME(correct)]), el("span", {}, [st])]) : null
+      ]),
       el("b", { class: "retry" }, ["נַסֵּה שׁוּב"])
     ]);
   }
@@ -53,8 +59,10 @@ window.Riddles = (function () {
       el("div", { class: "ww-row" }, [
         letterChip(a, "bad"), el("span", { class: "ww-vs" }, ["≠"]), letterChip(b, "bad")
       ]),
-      el("p", { class: "ww-why" }, ["אֵלֶּה שְׁתֵּי אוֹתִיּוֹת שׁוֹנוֹת. " +
-        (decisive(a) ? NAME(a) + " אוֹמֶרֶת: " + decisive(a) : "")]),
+      el("div", { class: "ww-cmp" }, [
+        el("div", { class: "cmp bad" }, [el("b", {}, [NAME(a)]), el("span", {}, [window.shortOf(a)])]),
+        el("div", { class: "cmp bad" }, [el("b", {}, [NAME(b)]), el("span", {}, [window.shortOf(b)])])
+      ]),
       el("b", { class: "retry" }, ["נַסֵּה שׁוּב"])
     ]);
   }
@@ -297,7 +305,15 @@ window.Riddles = (function () {
       const answer = chars[idx];
       const cl = (CLUES()[answer] || {}).clues || [];
       const shown = chars.map((c, i) => i === idx ? '<b class="blank">◻</b>' : c).join("");
-      const distract = pick(window.LETTERS.map(l => l.c).filter(c => c !== answer), 3);
+      /* מסיח אסור ליצור מילה אמיתית אחרת. בלי הסינון הזה "תּוֹרָה" עם
+         ם חסרה מקבלת גם "מוֹרֶה" כתשובה נכונה — והתלמיד שצודק מסומן כטועה. */
+      const WORDSET = new Set(window.WORDS.map(x => x.p));
+      const legal = window.LETTERS.map(l => l.c).filter(c => {
+        if (c === answer) return false;
+        const alt = w.p.slice(0, idx) + c + w.p.slice(idx + 1);
+        return !WORDSET.has(alt);
+      });
+      const distract = pick(legal, 3);
       const options = shuffle([{ c: answer, ok: true }, ...distract.map(c => ({ c, ok: false }))]);
       return {
         prompt: (n) => {

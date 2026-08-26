@@ -605,3 +605,12 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .bc-bar { position: absolute; inset-inline: 14px; bottom: 8px; height: 4px;
   background: var(--line); border-radius: 99px; overflow: hidden; }
 .bc-bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+
+
+/* ההסבר משווה סימן מול סימן — מה שבחרת מול מה שנכון */
+.ww-cmp { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; text-align: right; }
+.cmp { display: flex; gap: 8px; align-items: baseline; border-radius: 10px; padding: 8px 11px;
+  font-size: .92rem; line-height: 1.5; }
+.cmp b { flex: 0 0 auto; font-family: var(--font-display); font-size: .84rem; }
+.cmp.bad  { background: #fdecea; } .cmp.bad b  { color: #c0392b; }
+.cmp.good { background: #e9f9ef; } .cmp.good b { color: #1e7a48; }
