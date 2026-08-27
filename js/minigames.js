@@ -95,7 +95,7 @@ window.GameHall = (function () {
 
   function endBanner(host, msg, reward, again) {
     const b = el("div", { class: "mg-end" }, [ el("div", {}, [msg]) ]);
-    if (reward) { State.award(reward); UI.burst(); Audio2.sfx.reward(); b.appendChild(el("small", {}, ["+" + reward + " נְקֻדּוֹת"])); }
+    if (reward) { State.award(reward, { read: false }); UI.burst(); Audio2.sfx.reward(); b.appendChild(el("small", {}, ["+" + reward + " נְקֻדּוֹת"])); }
     b.appendChild(el("button", { class: "btn primary sm", onclick: again }, ["שׁוּב"]));
     host.appendChild(b);
   }
@@ -190,7 +190,7 @@ window.GameHall = (function () {
       if (over) return; const before = g.join();
       const R = rows(dir).map(r => { let a = r.filter(x => x); for (let i = 0; i < a.length - 1; i++) if (a[i] === a[i + 1]) { a[i] *= 2; score += a[i]; a.splice(i + 1, 1); } while (a.length < 4) a.push(0); return a; });
       put(dir, R);
-      if (g.join() !== before) { add(); Audio2.sfx.tap(); if (!won && g.includes(2048)) { won = true; UI.burst(); Audio2.sfx.reward(); State.award(20); UI.toast("2048! +20 נְקֻדּוֹת 🎉"); } if (!canMove()) over = true; }
+      if (g.join() !== before) { add(); Audio2.sfx.tap(); if (!won && g.includes(2048)) { won = true; UI.burst(); Audio2.sfx.reward(); State.award(20, { read: false }); UI.toast("2048! +20 נְקֻדּוֹת 🎉"); } if (!canMove()) over = true; }
       render();
     }
     function canMove() { if (g.includes(0)) return true; for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (c < 3 && g[ix(r, c)] === g[ix(r, c + 1)]) return true; if (r < 3 && g[ix(r, c)] === g[ix(r + 1, c)]) return true; } return false; }

@@ -67,10 +67,12 @@ window.App = (function () {
   /* ---------------- בֵּית הַמִּדְרָשׁ ---------------- */
   const LIB_MAP = { chumash: "chumash", "mishna-brura": "halacha" };
   function beit() {
-    const pts = State.progress.points;
+    /* נְקֻדּוֹת קְרִיאָה, לא נקודות סתם: את בבא קמא פותחת קריאה,
+       לא ניצחון ב-2048. ראה award() ב-state.js. */
+    const pts = State.progress.readPoints;
     const body = el("div", { class: "beitscr" });
     body.appendChild(el("h2", { class: "map-title" }, ["בֵּית הַמִּדְרָשׁ"]));
-    body.appendChild(el("p", { class: "sub-lead" }, [`טֶקְסְט אֲמִתִּי בִּכְתָב רָשִׁ״י. הַסְּפָרִים נִפְתָּחִים לְפִי נְקֻדּוֹת — יֵשׁ לְךָ ✦ ${pts}.`]));
+    body.appendChild(el("p", { class: "sub-lead" }, [`טֶקְסְט אֲמִתִּי בִּכְתָב רָשִׁ״י. הַסְּפָרִים נִפְתָּחִים לְפִי נְקֻדּוֹת קְרִיאָה — יֵשׁ לְךָ 📖 ${pts}.`]));
     const cards = el("div", { class: "beit-cards" });
     /* נפתחים לפי נקודות, בדיוק כמו אולם המשחקים. הסדר הוא סדר הקושי
        האמיתי: חומש מנוקד → שולחן ערוך → דף גמרא עם רש״י לא-מנוקד. */
@@ -85,9 +87,9 @@ window.App = (function () {
       const open = pts >= (c.unlock || 0);
       const card = el("button", { class: "beit-card" + (open ? "" : " locked"), style: `--hue:${c.hue}`,
         onclick: () => open ? libraryReader(c.kind)
-                            : UI.toast(`נִפְתָּח בְּ-${c.unlock} נְקֻדּוֹת (חָסֵר ${c.unlock - pts})`) }, [
+                            : UI.toast(`נִפְתָּח בְּ-${c.unlock} נְקֻדּוֹת קְרִיאָה (חָסֵר ${c.unlock - pts})`) }, [
         el("span", { class: "bc-icon" }, [open ? c.icon : "🔒"]),
-        el("span", { class: "bc-txt" }, [el("b", {}, [c.title]), el("small", {}, [open ? c.sub : `נִפְתָּח בְּ-${c.unlock} נְקֻדּוֹת`])]),
+        el("span", { class: "bc-txt" }, [el("b", {}, [c.title]), el("small", {}, [open ? c.sub : `נִפְתָּח בְּ-${c.unlock} נְקֻדּוֹת קְרִיאָה`])]),
         el("span", { class: "bc-go" }, [open ? "›" : `${c.unlock} נק׳`])
       ]);
       if (!open) card.appendChild(el("span", { class: "bc-bar" }, [

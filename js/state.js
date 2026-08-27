@@ -12,9 +12,9 @@ window.State = (function () {
 
   function defaultProgress() {
     return {
-      points: 0, done: {}, sr: {}, session: 0,
+      points: 0, readPoints: 0, done: {}, sr: {}, session: 0,
       worldsDone: {}, opened: {}, seals: [], medals: [],
-      mastered: 0,
+      mastered: 0, peeks: 0, pace: [],
       streak: { count: 0, last: null }, readDays: {},
       daily: { date: null, games: 0, points: 0, claimed: false },
       lastWorld: "w0"
@@ -22,7 +22,15 @@ window.State = (function () {
   }
   function loadProgress() {
     const p = load(GKEY); if (!p) return defaultProgress();
-    return Object.assign(defaultProgress(), p);
+    const g = Object.assign(defaultProgress(), p);
+    /* מעבר למטבע השני: פרופיל ישן צבר נקודות גם מ-2048 וגם מקריאה,
+       ואי אפשר להפריד בדיעבד. מזכים אותו לפי מה שכן ידוע — משימות
+       הקריאה שסימן שסיים — ולא לפי סך הנקודות. מכאן והלאה הספירה מדויקת. */
+    if (p.readPoints == null) {
+      const doneReading = Object.keys(g.done || {}).length;
+      g.readPoints = Math.min(g.points, doneReading * 20);
+    }
+    return g;
   }
 
   let profile = load(PKEY);
@@ -41,30 +49,44 @@ window.State = (function () {
     if (progress.daily.date !== today())
       progress.daily = { date: today(), games: 0, points: 0, claimed: false };
   }
-  function award(n) {
+  /* שני מטבעות:
+     points     — דרגות ואולם ההפסקה. נצבר מכל דבר.
+     readPoints — בית המדרש בלבד. נצבר *רק* ממשימות קריאה.
+     בלי ההפרדה הזאת ניצחון ב-2048 פותח את בבא קמא. */
+  function award(n, opts) {
     rollDaily();
     const before = window.rankFor(progress.points).name;
     progress.points += n; progress.daily.points += n;
+    if (!opts || opts.read !== false) progress.readPoints += n;
     const after = window.rankFor(progress.points);
     if (after.name !== before) queue.rank.push(after);
     save();
   }
 
   /* ---- מנוע SR — לכל אות ---- */
+  /* המפתח הוא מחרוזת חופשית, לא בהכרח תו אחד:
+       "א"            — אות
+       "abbr:ת״ל"     — ראשי תיבות
+       "word:תורה"    — מילה שלמה
+       "dh:מתני׳"     — דיבור המתחיל
+     המילון אדיש לסוג. רק חיפוש ה-tier (לצורך הניקוד) צריך ברירת מחדל. */
   function srOf(c) { return progress.sr[c] || { box: 0, due: 0, seen: 0, correct: 0 }; }
-  function recordResult(c, correct) {
+  function recordResult(c, correct, worth) {
     const s = srOf(c); s.seen++;
     if (correct) { s.correct++; s.box = Math.min(5, s.box + 1); }
     else         { s.box = Math.max(0, s.box - 1); }
     s.due = progress.session + SR_INTERVALS[s.box];
     progress.sr[c] = s;
     const tier = (window.LETTER_BY_CHAR[c] || {}).tier;
-    award(correct ? (tier === "hard" ? 4 : 2) : 0);
+    award(correct ? (worth || (tier === "hard" ? 4 : 2)) : 0);
     recountMastery();
     save();
   }
+  /* "אותיות נשלטו" סופר אותיות בלבד — אחרת ראשי תיבות ומילים
+     היו מנפחים את המספר שכתוב על המסך "🔤 N אוֹתִיּוֹת". */
   function recountMastery() {
-    progress.mastered = Object.values(progress.sr).filter(s => s.box >= MASTERY_BOX).length;
+    progress.mastered = Object.keys(progress.sr)
+      .filter(k => window.LETTER_BY_CHAR[k] && progress.sr[k].box >= MASTERY_BOX).length;
   }
   function boxOf(c) { return srOf(c).box; }
   function startSession() { progress.session++; save(); }

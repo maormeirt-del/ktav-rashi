@@ -79,6 +79,50 @@ window.Riddles = (function () {
     ]);
   }
 
+
+  /* ===========================================================
+     מַסִּיחִים שֶׁמַּכְרִיחִים לְפַעֲנֵחַ.
+     מסיח שנשלף מקטע אחר נפסל במשמעות: מספיק להבין את התרגום
+     ולבחור את מה שמתאים, בלי להסתכל על אף גליף. מסיח שנבדל
+     מהתשובה באות אחת — ד/ר, ב/כ, ס/ם — אי אפשר לפסול בלי לקרוא.
+     =========================================================== */
+  const CONS = /[\u05D0-\u05EA]/;
+  const FINALS = "ךםןףץ";
+  const NO_DAGESH = "אהחער";
+  function consIdx(w) { const a = []; for (let i = 0; i < w.length; i++) if (CONS.test(w[i])) a.push(i); return a; }
+  function swapAt(w, i, t) {
+    let rest = w.slice(i + 1);
+    /* דגש אחרי א/ה/ח/ע/ר הוא צורה שלא קיימת — משמיטים אותו,
+       אחרת המסיח מסגיר את עצמו כזיוף לפני שקוראים אותו. */
+    if (NO_DAGESH.indexOf(t) > -1 && rest[0] === "\u05BC") rest = rest.slice(1);
+    return w.slice(0, i) + t + rest;
+  }
+  /* מחזיר עד n גרסאות של המילה שנבדלות ממנה באות אחת */
+  function twinVariants(w, n, banned) {
+    const out = [], ban = new Set(banned || []);
+    const idxs = consIdx(w); if (!idxs.length) return out;
+    const lastC = idxs[idxs.length - 1];
+    shuffle(idxs).forEach(i => {
+      shuffle(window.twinsOf(w[i])).forEach(t => {
+        if (out.length >= n) return;
+        // חוק האות הסופית: ם באמצע מילה נפסלת בלי להסתכל על הצורה
+        if (FINALS.indexOf(t) > -1 && i !== lastC) return;
+        if (FINALS.indexOf(w[i]) > -1 && i === lastC && FINALS.indexOf(t) < 0) return;
+        const v = swapAt(w, i, t);
+        if (v === w || ban.has(v) || out.indexOf(v) > -1) return;
+        out.push(v);
+      });
+    });
+    return out.slice(0, n);
+  }
+  /* האות שבה נבדלות שתי מחרוזות באותו אורך — לצורך ההסבר */
+  function diffLetter(a, b) {
+    const ca = a.split("").filter(x => CONS.test(x)), cb = b.split("").filter(x => CONS.test(x));
+    if (ca.length !== cb.length) return null;
+    for (let i = 0; i < ca.length; i++) if (ca[i] !== cb[i]) return [ca[i], cb[i]];
+    return null;
+  }
+
   /* מעטפת אחידה לכל חידה: כותרת "חִידָה מס׳ X" + גוף */
   function riddleCard(kids, cls) {
     return el("div", { class: "riddle " + (cls || "") }, kids);
@@ -340,7 +384,9 @@ window.Riddles = (function () {
     Games.runMC(game, world, qs);
   }
 
-  /* ============ 5. חִידַת שׁוּרָה — מילה חסרה בקטע רש״י ============ */
+  /* ============ 5. חִידַת שׁוּרָה — מילה חסרה בקטע רש״י ============
+     המסיחים באים **מתוך הקטע עצמו**: קודם זוגות מינימליים של המילה
+     החסרה, ואז מילים אחרות מאותו קטע. כך התרגום נשאר הקשר, ולא פתרון. */
   function line(game, world) {
     const list = window.passagesByLevel(game.lvl || 5).filter(p => p.t.split(" ").length >= 4);
     const chosen = pick(list, Math.min(4, list.length));
@@ -349,8 +395,11 @@ window.Riddles = (function () {
       const wi = 1 + Math.floor(Math.random() * (ws.length - 1));
       const answer = ws[wi];
       const masked = ws.map((x, i) => i === wi ? '<b class="blank">◻◻◻</b>' : x).join(" ");
-      const distract = pick(window.PASSAGES.filter(x => x.id !== p.id).flatMap(x => x.t.split(" ")).filter(x => x.length > 2 && x !== answer), 3);
+      const own = ws.filter((x, i) => i !== wi && x.length > 2 && x !== answer);
+      const twins = twinVariants(answer, 2, ws);
+      const distract = [...twins, ...shuffle(own)].slice(0, 3);
       const options = shuffle([{ t: answer, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
+      const key = "word:" + (ps[wi] || answer).replace(/[\u0591-\u05C7]/g, "");
       return {
         prompt: (n) => {
           n.appendChild(riddleCard([
@@ -360,14 +409,22 @@ window.Riddles = (function () {
           ], "tight"));
         },
         options: options.map(o => ({ node: el("span", { class: "wopt" }, [rashi(o.t)]), ok: o.ok, t: o.t })),
-        explain: (o) => whyWrongText(o.t, answer, "לְפִי מָה שֶׁהַקֶּטַע אוֹמֵר: " + p.tr),
-        onResult: (ok) => { if (ok) { Audio2.speak(ps[wi] || ""); State.award(4); } }
+        explain: (o) => {
+          const d = diffLetter(o.t, answer);
+          return whyWrongText(o.t, answer, d
+            ? "הַהֶבְדֵּל הוּא אוֹת אַחַת: בָּחַרְתָּ " + NAME(d[0]) + ", וְצָרִיךְ " + NAME(d[1]) + ". " + (window.shortOf(d[1]) || "")
+            : "לְפִי מָה שֶׁהַקֶּטַע אוֹמֵר: " + p.tr);
+        },
+        onResult: (ok) => { if (ok) Audio2.speak(ps[wi] || ""); State.recordResult(key, ok, 4); }
       };
     });
     Games.runMC(game, world, qs);
   }
 
-  /* ============ 6. חִידַת שֶׁטֶף — בלי רמזים ============ */
+  /* ============ 6. חִידַת שֶׁטֶף — בלי רמזים ============
+     השאלה בסוף היא על **מילה מתוך הקטע**, לא על תרגום הקטע כולו.
+     ארבעה תרגומים של ארבעה קטעים שונים נפתרים בהתאמת משמעות;
+     מילה אחת מול שלוש תאומות שלה נפתרת רק בקריאה. */
   function fluent(game, world) {
     const list = window.passagesByLevel(game.lvl || 6);
     const p = list[Math.floor(Math.random() * list.length)];
@@ -379,7 +436,7 @@ window.Riddles = (function () {
         if (over) return; over = true; ch.stop();
         Games.scoreCard(game, world, { won: false, why: "נִגְמַר הַזְּמַן", ch, base: 0,
           rows: [["הַקֶּטַע", p.src]] });
-      }, { tries: Games.triesFor(game, world), limit: game.limit });
+      }, { tries: Games.triesFor(game, world), limit: game.limit, peek: true });
       body.appendChild(riddleCard([
         el("div", { class: "src" }, [p.src]),
         el("div", { class: "passage" }, [rashi(p.t)])
@@ -390,19 +447,33 @@ window.Riddles = (function () {
 
     function solve() {
       if (over) return;
-      const others = shuffle(window.PASSAGES.filter(x => x.id !== p.id)).slice(0, 3);
-      const options = shuffle([{ p, ok: true }, ...others.map(x => ({ p: x, ok: false }))]);
-      Games.runMC(game, world, [{
-        prompt: (n) => n.appendChild(riddleCard([
-          el("div", { class: "passage sm" }, [rashi(p.t)]),
-          ask("מָה הַקֶּטַע הַזֶּה אוֹמֵר?")
-        ])),
-        options: options.map(o => ({ node: el("span", { class: "tropt" }, [o.p.tr]), ok: o.ok })),
-        onResult: (ok) => { if (ok) State.award(8); }
-      }], ch);
+      const ws = p.t.split(" "), ps = p.plain.split(" ");
+      const idxs = ws.map((w, i) => i).filter(i => ws[i].replace(/[\u0591-\u05C7]/g, "").length >= 3);
+      const qs = pick(idxs, Math.min(3, idxs.length)).map(wi => {
+        const answer = ws[wi], plain = (ps[wi] || answer).replace(/[\u0591-\u05C7]/g, "");
+        const twins = twinVariants(answer, 2, ws);
+        const own = ws.filter((x, i) => i !== wi && x.length > 2);
+        const distract = [...twins, ...shuffle(own)].slice(0, 3);
+        const options = shuffle([{ t: answer, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
+        const sq = (t) => UI.square(window.stripNikud(t));
+        return {
+          prompt: (n) => n.appendChild(riddleCard([
+            el("div", { class: "big-word" }, [rashi(answer)]),
+            ask("אֵיזוֹ מִלָּה זֹאת?")
+          ], "tight")),
+          options: options.map(o => ({ node: el("span", { class: "sqword" }, [sq(o.t)]), ok: o.ok, t: o.t })),
+          explain: (o) => {
+            const d = diffLetter(o.t, answer);
+            return whyWrongText(o.t, answer, d
+              ? "אוֹת אַחַת: בָּחַרְתָּ " + NAME(d[0]) + ", וְצָרִיךְ " + NAME(d[1]) + ". " + (window.shortOf(d[1]) || "")
+              : null);
+          },
+          onResult: (ok) => { if (ok) Audio2.speak(plain); State.recordResult("word:" + plain, ok, 6); }
+        };
+      });
+      Games.runMC(game, world, qs, ch);
     }
   }
-
 
   /* ============ 7. רֶשֶׁת הַהַבְחָנָה — התרגול החתום של החוברת ============
      "הַקֵּף כָּל צָדִ״י. סְפֹר." הלומד סורק רשת של אותיות מבלבלות
@@ -531,7 +602,13 @@ window.Riddles = (function () {
   function abbrev(game, world) {
     const set = window.abbrevSet(game.set || "abbr");
     const all = window.allAbbrev();
-    const items = pick(set, Math.min(Q, set.length));
+    /* ת״ל · ה״ג · קס״ד הם החסם האמיתי בגמרא. עד היום הם נשאלו פעם
+       אחת ולא חזרו לעולם, כי מנוע החזרה קיבל רק תווי אות. עכשיו יש
+       להם מפתח משלהם, והם חוזרים כמו כל אות קשה. */
+    const keyOf = (a) => "abbr:" + a.f;
+    const due = State.dueChars(set.map(keyOf));
+    const byKey = set.reduce((m, a) => (m[keyOf(a)] = a, m), {});
+    const items = [...new Set([...due.map(k => byKey[k]), ...shuffle(set)])].slice(0, Math.min(Q, set.length));
     const qs = items.map(a => {
       const distract = pick(all.filter(x => x.e !== a.e), 3);
       const options = shuffle([{ a, ok: true }, ...distract.map(x => ({ a: x, ok: false }))]);
@@ -543,7 +620,7 @@ window.Riddles = (function () {
         options: options.map(o => ({ node: el("span", { class: "name" }, [o.a.e]), ok: o.ok, a: o.a })),
         explain: (o) => whyWrongText(o.a.f, a.f, o.a.f + " = " + o.a.e + ". " + a.f + " = " + a.e + (a.note ? " (" + a.note + ")" : "") + "."),
         tip: a.note ? a.f + " — " + a.note : null,
-        onResult: (ok) => { if (ok) State.award(4); }
+        onResult: (ok) => State.recordResult(keyOf(a), ok, 4)
       };
     });
     Games.runMC(game, world, qs);

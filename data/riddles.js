@@ -211,6 +211,19 @@ window.CLUES = {
   ] }
 };
 
+/* ---- זוּגוֹת מִינִימָלִיִּים ----
+   מי שמתבלבל, מתבלבל בתוך האשכול או בתוך זוג הבלבול. הרשימה הזאת
+   היא מה שמאפשר לבנות מסיח שנבדל מהתשובה באות אחת בלבד — ד/ר, ב/כ,
+   ס/ם — ולכן מכריח לפענח גליף במקום להתאים משמעות. */
+window.TWINS = (function () {
+  const m = {};
+  const add = (a, b) => { if (a !== b && (m[a] = m[a] || []).indexOf(b) < 0) m[a].push(b); };
+  (window.CONFUSIONS || []).forEach(p => { add(p.pair[0], p.pair[1]); add(p.pair[1], p.pair[0]); });
+  (window.FAMILIES || []).forEach(f => f.chars.forEach(a => f.chars.forEach(b => add(a, b))));
+  return m;
+})();
+window.twinsOf = (c) => window.TWINS[c] || [];
+
 /* ---- שליפות ---- */
 window.familyById = (id) => window.FAMILIES.find(f => f.id === id);
 window.familyOf = (c) => window.familyById((window.CLUES[c] || {}).fam);
