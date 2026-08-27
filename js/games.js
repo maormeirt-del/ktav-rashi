@@ -73,16 +73,26 @@ window.Games = (function () {
     game && game.tries != null ? game.tries
       : (world && TRIES_BY_WORLD[world.id]) || CH_STRIKES;
 
+  const PEEK_COST = 8;   // שניות. "הצץ" עולה זמן — לא נספר כטעות.
   function challenge(host, onTimeout, opts) {
     opts = opts || {};
     let onTime = onTimeout;
     const MAX = opts.tries || CH_STRIKES;
     const LIMIT = opts.limit || CH_LIMIT;
-    let left = LIMIT, strikes = 0, timer = null, running = false;
+    let left = LIMIT, strikes = 0, banked = 0, peeks = 0, timer = null, running = false;
+    /* הדרך היחידה לגלות אות באפליקציה הייתה לטעות. בחוברת המודפסת
+       יש מפתח פתרונות; כאן הוא עולה שניות, לא פסילה. */
+    const peekBtn = opts.peek === false ? null
+      : el("button", { class: "hud hud-peek", onclick: () => {
+          left = Math.max(1, left - PEEK_COST); peeks++; paint();
+          State.progress.peeks = (State.progress.peeks || 0) + 1; State.save();
+          App.keySheet(true);
+        } }, ["👁 הַצֵּץ (−" + PEEK_COST + "שׁ)"]);
     const hud = el("div", { class: "race-hud" }, [
       el("span", { class: "hud hud-time" }, ["⏱ " + left]),
       opts.pairs ? el("span", { class: "hud hud-pairs" }, ["✓ 0/" + opts.pairs]) : null,
-      el("span", { class: "hud hud-tries" }, ["🔁 " + MAX])
+      el("span", { class: "hud hud-tries" }, ["🔁 " + MAX]),
+      peekBtn
     ]);
     host.appendChild(hud);
     function paint(pairsDone) {
@@ -106,13 +116,18 @@ window.Games = (function () {
         }, 1000);
       },
       strike() { strikes++; paint(); return strikes >= MAX; },   // true = נגמר
+      /* בעולמות הלימוד מיצוי הניסיונות סוגר שאלה, לא סבב. הפסילות
+         נצברות לצורך בונוס הדיוק, אבל המונה מתאפס לשאלה הבאה. */
+      resetStrikes() { banked += strikes; strikes = 0; paint(); },
       /* אותו שעון ממשיך לשלב הבא (קריאה → שאלה), רק היעד משתנה */
       handOff(fn) { onTime = fn; return this; },
       get left()    { return Math.max(0, left); },
       get used()    { return LIMIT - Math.max(0, left); },
       get max()     { return MAX; },
       get limit()   { return LIMIT; },
-      get strikes() { return strikes; }
+      get strikes() { return strikes; },
+      get allStrikes() { return banked + strikes; },
+      get peeks()   { return peeks; }
     };
   }
 
@@ -122,8 +137,13 @@ window.Games = (function () {
     const ws = window.WORLDS;
     const wi = ws.findIndex(w => w.id === world.id);
     const gi = world.games.findIndex(g => g.id === game.id);
-    if (gi > -1 && gi + 1 < world.games.length) return { g: world.games[gi + 1], w: world };
-    for (let i = wi + 1; i < ws.length; i++) if (ws[i].games.length) return { g: ws[i].games[0], w: ws[i] };
+    /* אתגר שיא אינו "המשימה הבאה" — הוא נפתח אחרי שהעולם נגמר */
+    for (let k = gi + 1; k > 0 && k < world.games.length; k++)
+      if (!world.games[k].bonus) return { g: world.games[k], w: world };
+    for (let i = wi + 1; i < ws.length; i++) {
+      const g = ws[i].games.find(x => !x.bonus);
+      if (g) return { g, w: ws[i] };
+    }
     return null;
   }
 
@@ -131,17 +151,20 @@ window.Games = (function () {
   function scoreCard(game, world, o) {
     const timeBonus = o.won ? o.ch.left : 0;
     /* מנורמל ל-30 בשיא: אחרת עולם עם 5 ניסיונות היה מחלק יותר נקודות
-       מעולם עם 3, והציונים בין העולמות לא היו ברי-השוואה. */
-    const accBonus  = o.won ? Math.round((o.ch.max - o.ch.strikes) / o.ch.max * 30) : 0;
+       מעולם עם 3, והציונים בין העולמות לא היו ברי-השוואה.
+       בעולם רך הפסילות נצברות על פני כל השאלות, ולכן גם המכנה. */
+    const accMax    = o.softQ ? o.ch.max * o.softQ : o.ch.max;
+    const accUsed   = o.softQ ? o.ch.allStrikes : o.ch.strikes;
+    const accBonus  = o.won ? Math.round(Math.max(0, accMax - accUsed) / accMax * 30) : 0;
     const total     = Math.max(0, o.base) + timeBonus + accBonus;
     const first = State.markGameDone(game.id, world.id, total);
     if (!first && total) State.award(total);
 
     const rows = (o.rows || []).concat([
       ["זְמַן", o.ch.used + " שְׁנִיּוֹת"],
-      ["נִסְיוֹנוֹת נוֹסָפִים", o.ch.strikes + " מִתּוֹךְ " + o.ch.max]
-    ]);
-    const perfect = o.won && o.ch.strikes === 0;
+      ["נִסְיוֹנוֹת נוֹסָפִים", accUsed + " מִתּוֹךְ " + accMax]
+    ]).concat(o.ch.peeks ? [["הֲצָצוֹת בַּמַּפְתֵּחַ", o.ch.peeks]] : []);
+    const perfect = o.won && accUsed === 0;
     const nxt = nextTask(game, world);
     const card = el("div", { class: "done-card race-done" }, [
       el("div", { class: "done-emoji" }, [o.won ? (perfect ? "🏆" : "🎉") : "⏱"]),
@@ -167,6 +190,18 @@ window.Games = (function () {
     UI.setScreen(el("div", { class: "game center" }, [card]));
   }
 
+  /* בעולמות הלימוד מיצוי הניסיונות סוגר את *השאלה*, לא את הסבב.
+     אצל מתחיל חמש טעויות על שש שאלות הן מצב נורמלי; לסיים לו את הכל
+     ולהתחיל מאפס זה לא מדד, זה עונש. הציון בסוף. */
+  const SOFT_WORLDS = ["w1", "w2", "w5h"];
+  const SOFT_LIMIT = 90;    // יותר ניסיונות לשאלה = צריך יותר זמן לסבב
+  /* שלושה לשאלה, לא חמישה לסבב. בשאלה של ארבע אפשרויות, חמישה
+     ניסיונות הם יותר מכל המסיחים גם יחד — כלומר המנגנון לא קיים.
+     שלושה סוגרים את השאלה ומראים את התשובה במקום להשאיר את
+     הלומד ללחוץ על מה שנשאר. בסך הכל: 18 טעויות מותרות בסבב
+     במקום 5, וכל אחת מהן נגמרת בהסבר. */
+  const SOFT_TRIES = 3;
+
   /* ---------- רץ שאלות רב-ברירה (תחת שכבת האתגר) ---------- */
   // questions: [{ prompt(node), options:[{node, ok, char}], tip, onResult(ok) }]
   function runMC(game, world, questions, ch0) {
@@ -177,10 +212,12 @@ window.Games = (function () {
         el("div", { class: "game-title" }, [game.emoji + " " + game.title])
       ]), body
     ]));
+    const soft = !ch0 && world && SOFT_WORLDS.indexOf(world.id) > -1;
     const ch = ch0
       ? (body.appendChild(ch0.hud), ch0.handOff(() => end(false, "נִגְמַר הַזְּמַן")))
       : challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
-          { tries: triesFor(game, world), limit: game.limit });
+          { tries: soft ? SOFT_TRIES : triesFor(game, world),
+            limit: game.limit || (soft ? SOFT_LIMIT : null) });
     const setDot = progressDots(questions.length, body);
     const stage = el("div", { class: "stage" }); body.appendChild(stage);
     let i = 0, score = 0, over = false;
@@ -189,7 +226,7 @@ window.Games = (function () {
     function end(won, why) {
       if (over) return; over = true; ch.stop();
       scoreCard(game, world, {
-        won, why, ch, base: score * 5,
+        won, why, ch, base: score * 5, softQ: soft ? questions.length : 0,
         rows: [["תְּשׁוּבוֹת נְכוֹנוֹת", score + "/" + questions.length]]
       });
     }
@@ -226,7 +263,15 @@ window.Games = (function () {
           [...opts.children].forEach((c, ci) => { if (q.options[ci].ok) c.classList.add("ok"); });
           [...opts.children].forEach(c => c.classList.add("locked"));
           setDot(i, false);
-          setTimeout(() => end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת"), 2200);
+          if (soft) {
+            /* מראים את התשובה, מסמנים ל-SR, וממשיכים לשאלה הבאה */
+            q.onShown && q.onShown();
+            tip.appendChild(el("b", { class: "retry moveon" }, ["זֹאת הַתְּשׁוּבָה. מַמְשִׁיכִים ›"]));
+            ch.resetStrikes();
+            setTimeout(() => { i++; show(); }, 2600);
+          } else {
+            setTimeout(() => end(false, "נִגְמְרוּ הַנִּסְיוֹנוֹת"), 2200);
+          }
         }
       }
     }
@@ -332,16 +377,19 @@ window.Games = (function () {
     }
   }
 
-  /* --- 4. מֵרוֹץ הַהַתְאָמָה — כָּל 27 עַל לוּחַ אֶחָד ---
-     לא בריכה חלקית: כל 27 הסימנים. שכבת האתגר (דקה/שלוש פסילות)
-     משותפת לכל המשימות — ראה challenge() למעלה. */
+  /* --- 4. מֵרוֹץ הַהַתְאָמָה ---
+     שתי גרסאות מאותו קוד: שַׁעַר של 9 זוגות בתוך העולם, ומרוץ מלא
+     של כל 27 כאתגר שיא אחרי סיומו. 27 זוגות בדקה = 2.2 שניות לזוג
+     כולל סריקה — זה שיא, לא תנאי מעבר.
+     ⚠️ הדקה עצמה נשארת כמו שהיא, לבקשת מאור. */
   function match(game, world) {
-    const chars = ALL_CHARS();
+    const chars = game.n ? pick(ALL_CHARS(), game.n) : ALL_CHARS();
     frame(game, world, (body) => {
       let sel = null, matched = 0, over = false;
 
       body.appendChild(el("p", { class: "lead dim" }, [
-        "כָּל " + chars.length + " הַסִּימָנִים עַל הַלּוּחַ. לַחַץ עַל אוֹת רָשִׁ״י, וְאָז עַל הַתְּאוֹמָה הַמְּרֻבַּעַת שֶׁלָּהּ."
+        (game.n ? chars.length + " זוּגוֹת עַל הַלּוּחַ." : "כָּל " + chars.length + " הַסִּימָנִים עַל הַלּוּחַ.") +
+        " לַחַץ עַל אוֹת רָשִׁ״י, וְאָז עַל הַתְּאוֹמָה הַמְּרֻבַּעַת שֶׁלָּהּ."
       ]));
       const ch = challenge(body, () => end(false, "נִגְמַר הַזְּמַן"),
         { pairs: chars.length, tries: triesFor(game, world), limit: game.limit });
@@ -350,7 +398,8 @@ window.Games = (function () {
       /* ההסבר יושב מעל הלוח: מתחת ל-54 אריחים הוא נופל מחוץ למסך,
          והלומד לא רואה בדיוק את מה שנועד ללמד אותו. */
       body.appendChild(status); body.appendChild(grid);
-      const start = el("button", { class: "btn primary big", onclick: begin }, ["הַתְחֵל ⏱ דַּקָּה"]);
+      const start = el("button", { class: "btn primary big", onclick: begin },
+        ["הַתְחֵל ⏱ " + (game.limit || CH_LIMIT) + " שְׁנִיּוֹת"]);
       body.appendChild(start);
 
       shuffle([...chars.map(c => ({ c, side: "r" })), ...chars.map(c => ({ c, side: "s" }))])

@@ -12,6 +12,7 @@ window.App = (function () {
     if (h.indexOf("lib/") === 0) { const k = h.split("/")[1]; if (window.LIBRARY[k]) return libraryReader(k); }
     if (h.indexOf("play/") === 0) { const id = h.split("/")[1]; if (window.GAMEHALL.some(g => g.id === id)) return GameHall.play(id); }
     if (h && window.worldById(h)) return world(h);
+    if (h === "key") return keySheet();
     if (["home", "beit", "games", "shelf", "me"].includes(h)) return go(h);
     go("home");
   }
@@ -185,6 +186,50 @@ window.App = (function () {
     return box;
   }
 
+  /* ---------------- מַפְתֵּחַ הַסִּימָנִים ----------------
+     בחוברת המודפסת יש מפתח פתרונות. באפליקציה הדרך היחידה לגלות
+     אות הייתה לטעות. כאן הכל פתוח: גליף, מרובע, שם, והסימן המבחין. */
+  function keySheetBody() {
+    const wrap = el("div", { class: "keysheet" });
+    (window.FAMILIES || []).forEach(f => {
+      wrap.appendChild(el("div", { class: "ks-fam" + (f.boss ? " boss" : "") }, [
+        el("b", {}, [f.name]),
+        f.rule ? el("small", {}, [f.rule]) : null
+      ]));
+      const row = el("div", { class: "ks-row" });
+      f.chars.forEach(c => {
+        const L = window.LETTER_BY_CHAR[c] || {};
+        row.appendChild(el("div", { class: "ks-cell" }, [
+          el("div", { class: "ks-glyph" }, [rashi(c)]),
+          el("div", { class: "ks-sq" }, [square(c)]),
+          el("b", {}, [L.name || c]),
+          el("small", {}, [window.shortOf(c) || ""])
+        ]));
+      });
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+  function keySheet(asModal) {
+    if (asModal) {
+      const btn = el("button", { class: "btn primary" }, ["חָזַרְתִּי לַחִידָה"]);
+      const m = UI.modal(el("div", { class: "ks-modal" }, [
+        el("h3", {}, ["מַפְתֵּחַ הַסִּימָנִים"]), keySheetBody(), btn
+      ]));
+      btn.addEventListener("click", () => m.close());
+      return m;
+    }
+    const body = el("div", { class: "kspage" });
+    body.appendChild(el("div", { class: "world-hero", style: "--hue:200" }, [
+      el("button", { class: "back", onclick: () => go("home") }, ["›"]),
+      el("div", { class: "wh-emoji" }, ["🗝️"]),
+      el("h2", {}, ["מַפְתֵּחַ הַסִּימָנִים"]),
+      el("p", {}, ["27 הַסִּימָנִים, הַשֵּׁם, וְהַסִּימָן שֶׁמַּבְדִּיל. פָּתוּחַ תָּמִיד."])
+    ]));
+    body.appendChild(keySheetBody());
+    UI.setScreen(el("div", { class: "page" }, [body, UI.nav("home")]));
+  }
+
   function home() {
     const body = el("div", { class: "home" });
     // אתגר יומי + מסע
@@ -197,11 +242,18 @@ window.App = (function () {
     ]);
     body.appendChild(daily);
 
+    body.appendChild(el("button", { class: "keylink", onclick: () => keySheet() }, [
+      el("span", {}, ["🗝️"]),
+      el("b", {}, ["מַפְתֵּחַ הַסִּימָנִים"]),
+      el("small", {}, ["כָּל 27 הַסִּימָנִים — פָּתוּחַ תָּמִיד"]), el("i", {}, ["›"])
+    ]));
+
     body.appendChild(el("h2", { class: "map-title" }, ["מַסַּע הַפִּעֲנוּחַ"]));
     const path = el("div", { class: "path" });
     const firstUndone = window.WORLDS.find(w => !State.progress.worldsDone[w.id]);
     window.WORLDS.forEach((w, i) => {
-      const doneCount = w.games.filter(g => State.isDone(g.id)).length;
+      const tasks = w.games.filter(g => !g.bonus);
+      const doneCount = tasks.filter(g => State.isDone(g.id)).length;
       const complete = !!State.progress.worldsDone[w.id];
       const recommended = firstUndone && firstUndone.id === w.id;
       const node = el("button", { class: "world-node" + (complete ? " done" : "") + (recommended ? " rec" : ""), style: `--hue:${w.hue}`, onclick: () => world(w.id) }, [
@@ -209,7 +261,7 @@ window.App = (function () {
         el("div", { class: "wn-info" }, [
           el("b", {}, [w.title]),
           el("small", {}, [w.sub]),
-          el("div", { class: "wn-prog" }, [el("i", { style: `width:${Math.round(doneCount / w.games.length * 100)}%` })])
+          el("div", { class: "wn-prog" }, [el("i", { style: `width:${Math.round(doneCount / Math.max(1, tasks.length) * 100)}%` })])
         ]),
         recommended ? el("span", { class: "rec-tag" }, ["מֻמְלָץ"]) : null
       ]);
@@ -235,7 +287,7 @@ window.App = (function () {
       if (sef) body.appendChild(el("div", { class: "unlock-hint" }, [`🎁 סַיֵּם אֶת הָעוֹלָם → נִפְתָּח: ${sef.icon} ${sef.name}`]));
     }
     const list = el("div", { class: "game-list" });
-    w.games.forEach(g => {
+    w.games.filter(g => !g.bonus).forEach(g => {
       const done = State.isDone(g.id);
       list.appendChild(el("button", { class: "game-card" + (done ? " done" : ""), onclick: () => Games.play(g, w) }, [
         el("span", { class: "gc-emoji" }, [g.emoji]),
@@ -244,6 +296,24 @@ window.App = (function () {
       ]));
     });
     body.appendChild(list);
+
+    /* אֶתְגַּר שִׂיא — נפתח רק אחרי שהעולם הסתיים, ואינו תנאי לסיומו */
+    const bonus = w.games.filter(g => g.bonus);
+    if (bonus.length) {
+      const open = State.worldComplete(w.id);
+      body.appendChild(el("h3", { class: "sec bonus-sec" }, ["🏆 אֶתְגַּר שִׂיא"]));
+      const bl = el("div", { class: "game-list" });
+      bonus.forEach(g => {
+        const done = State.isDone(g.id);
+        bl.appendChild(el("button", { class: "game-card bonus" + (done ? " done" : "") + (open ? "" : " locked"),
+          onclick: () => open ? Games.play(g, w) : UI.toast("סַיֵּם אֶת הָעוֹלָם וְהוּא נִפְתָּח 🔒") }, [
+          el("span", { class: "gc-emoji" }, [open ? g.emoji : "🔒"]),
+          el("span", { class: "gc-title" }, [g.title]),
+          el("span", { class: "gc-check" }, [done ? "✓" : open ? "›" : ""])
+        ]));
+      });
+      body.appendChild(bl);
+    }
     UI.setScreen(el("div", { class: "page" }, [body, UI.nav("home")]));
   }
 
@@ -338,7 +408,7 @@ window.App = (function () {
 
   function drain() { UI.drainRewards(); }
 
-  return { boot, go, world, home, shelf, me, game: (wid, gid) => { const w = window.worldById(wid); Games.play(w.games.find(g => g.id === gid), w); } };
+  return { boot, go, world, home, shelf, me, keySheet, game: (wid, gid) => { const w = window.worldById(wid); Games.play(w.games.find(g => g.id === gid), w); } };
 })();
 
 document.addEventListener("DOMContentLoaded", () => App.boot());

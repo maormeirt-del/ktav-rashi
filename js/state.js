@@ -112,7 +112,8 @@ window.State = (function () {
   }
   function worldComplete(worldId) {
     const w = window.worldById(worldId); if (!w) return false;
-    return w.games.every(g => progress.done[g.id]);
+    /* אתגרי שיא (bonus) אינם תנאי לסיום העולם — הם נפתחים אחריו */
+    return w.games.filter(g => !g.bonus).every(g => progress.done[g.id]);
   }
   function checkWorldComplete(worldId) {
     if (!worldId || progress.worldsDone[worldId]) return;

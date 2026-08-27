@@ -123,7 +123,12 @@ window.WORLDS = [
       { id: "w2-fam2", type: "r-family", title: "כ · ב · ש  וְ־ד · ר", emoji: "🪶", fams: ["kbsh", "dr"] },
       { id: "w2-g2",   type: "r-grid",   title: "סַמֵּן כָּל דָּלֶת. סְפֹר.", emoji: "📐", fam: "dr", target: "ד" },
       { id: "w2-fam3", type: "r-family", title: "ה · ק · ת  וְ־ע · צ · ל", emoji: "🦶", fams: ["hkt", "ayz"] },
-      { id: "w1-match", type: "match",   title: "מֵרוֹץ הַזִּהוּי — כָּל 27", emoji: "⏱️" }
+      /* השער: 9 זוגות. גודל המשימה קובע את הזמן, בדיוק כמו בהפתעה
+         (100 שנ׳) ובתיק הבלש (90). */
+      { id: "w2-match9", type: "match", title: "מֵרוֹץ הַזִּהוּי", emoji: "⏱️", n: 9 },
+      /* המרוץ המלא נשאר — כאתגר שיא, לא כשער באמצע העולם.
+         ⚠️ הדקה היא בקשה מפורשת של מאור. לא לגעת. */
+      { id: "w1-match", type: "match", title: "אֶתְגַּר שִׂיא — כָּל 27 בְּדַקָּה", emoji: "🏆", bonus: true }
     ] },
 
   { id: "w3", title: "הַבּוֹס: ס · ם", emoji: "🔴", hue: 355,
@@ -141,8 +146,13 @@ window.WORLDS = [
   { id: "w4", title: "אוֹת נֶעֶלְמָה", emoji: "🔵", hue: 210,
     sub: "מִלָּה אֲמִתִּית, אוֹת אַחַת חֲסֵרָה. הַמִּלָּה עַצְמָהּ הִיא רֶמֶז", opens: "ein-yaakov",
     games: [
+      /* קודם קוראים מילה שלמה, ורק אחר כך משלימים בה אות.
+         עד היום לא הייתה באפליקציה אף משימה שבה שואלים
+         "המילה הזאת בכתב רש״י, מה היא?" */
+      { id: "w4-word",  type: "r-readword", title: "מָה כָּתוּב כָּאן?", emoji: "👁️", lvl: [1, 2] },
       { id: "w4-read1", type: "r-word", title: "מִלִּים קְצָרוֹת", emoji: "🔤", lvl: [1, 2] },
       { id: "w4-fill",  type: "r-word", title: "מֻשָּׂגִים", emoji: "🧩", lvl: [2, 3] },
+      { id: "w4-word2", type: "r-readword", title: "מִלִּים אֲרֻכּוֹת — מָה כָּתוּב?", emoji: "🔎", lvl: [3, 4] },
       { id: "w4-read2", type: "r-word", title: "מִלִּים גְּדוֹלוֹת", emoji: "📚", lvl: [3, 4] }
     ] },
 

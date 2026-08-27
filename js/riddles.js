@@ -223,30 +223,65 @@ window.Riddles = (function () {
   }
 
   /* ============ 2. חִידַת אֶשְׁכּוֹל — בלי האות ============ */
+
+  /* --- רֶגַע לִמּוּד: כרטיס היכרות לפני האשכול, בלי שעון ---
+     עד היום challenge() נקראה בכל משימה חוץ מ-w0, כלומר לא היה
+     באפליקציה אף מסך שבו רואים אות חדשה בלי שעון שרץ. זה המסך. */
+  function learnCard(fams, onDone) {
+    const wrap = el("div", { class: "learn" });
+    fams.forEach(f => {
+      wrap.appendChild(el("div", { class: "learn-fam" + (f.boss ? " boss" : "") }, [
+        el("div", { class: "lf-name" }, [f.name]),
+        f.ask ? el("p", { class: "lf-ask" }, [f.ask]) : null
+      ]));
+      const row = el("div", { class: "learn-row n" + f.chars.length });
+      f.chars.forEach(c => {
+        const L = window.LETTER_BY_CHAR[c] || {};
+        row.appendChild(el("button", { class: "learn-cell", onclick: () => Audio2.speak(NAME(c)) }, [
+          el("div", { class: "lc-glyph" }, [rashi(c)]),
+          el("div", { class: "lc-sq" }, [square(c)]),
+          el("b", {}, [L.name || c]),
+          el("small", {}, [window.shortOf(c) || ""])
+        ]));
+      });
+      wrap.appendChild(row);
+      if (f.rule) wrap.appendChild(el("div", { class: "learn-rule" }, [el("span", {}, ["הַכְּלָל"]), f.rule]));
+    });
+    wrap.appendChild(el("button", { class: "btn primary big", onclick: onDone }, ["הֵבַנְתִּי — לַתַּרְגּוּל ›"]));
+    return wrap;
+  }
+
   function family(game, world) {
     const fams = (window.FAMILIES || []).filter(f => f.chars.length >= 2);
     const list = shuffle(game.fams ? fams.filter(f => game.fams.includes(f.id)) : fams);
-    const qs = [];
-    for (let k = 0; k < Q; k++) {
-      const f = list[k % list.length];
-      const c = f.chars[Math.floor(Math.random() * f.chars.length)];
-      const cl = CLUES()[c].clues;
-      qs.push({
-        prompt: (n) => {
-          n.appendChild(riddleCard([
-            el("div", { class: "fam-tag" }, [f.name]),
-            hint(c)
-          ], "tight"));
-        },
-        options: shuffle(f.chars).map(x => ({
-          node: el("div", { class: "big-letter sm" }, [rashi(x)]), ok: x === c, c: x
-        })),
-        explain: (o) => whyWrong(o.c, c),
-        tip: "זוֹ " + NAME(c) + ".",
-        onResult: (ok) => { State.recordResult(c, ok); if (ok) Audio2.speak(NAME(c)); }
-      });
+    const shown = game.fams ? fams.filter(f => game.fams.includes(f.id)) : [];
+
+    function run() {
+      const qs = [];
+      for (let k = 0; k < Q; k++) {
+        const f = list[k % list.length];
+        const c = f.chars[Math.floor(Math.random() * f.chars.length)];
+        qs.push({
+          prompt: (n) => {
+            n.appendChild(riddleCard([
+              el("div", { class: "fam-tag" }, [f.name]),
+              hint(c)
+            ], "tight"));
+          },
+          options: shuffle(f.chars).map(x => ({
+            node: el("div", { class: "big-letter sm" }, [rashi(x)]), ok: x === c, c: x
+          })),
+          explain: (o) => whyWrong(o.c, c),
+          tip: "זוֹ " + NAME(c) + ".",
+          onShown: () => Audio2.speak(NAME(c)),
+          onResult: (ok) => { State.recordResult(c, ok); if (ok) Audio2.speak(NAME(c)); }
+        });
+      }
+      Games.runMC(game, world, qs);
     }
-    Games.runMC(game, world, qs);
+
+    if (!shown.length) return run();
+    Games.frame(game, world, (body) => body.appendChild(learnCard(shown, run)));
   }
 
   /* ============ 3. הַבַּלָּשׁ — רמז אחר רמז ============ */
@@ -379,6 +414,39 @@ window.Riddles = (function () {
         options: options.map(o => ({ node: el("div", { class: "big-letter sm" }, [rashi(o.c)]), ok: o.ok, c: o.c })),
         explain: (o) => whyWrong(o.c, answer),
         onResult: (ok) => { State.recordResult(answer, ok); if (ok) { Audio2.speak(w.t); UI.toast(w.t.replace(/[֑-ׇ]/g, "")); } }
+      };
+    });
+    Games.runMC(game, world, qs);
+  }
+
+  /* ============ 4ב. קְרִיאַת מִלָּה שְׁלֵמָה ============
+     w4 שאל "איזו אות חסרה", w6 שאל "מה זה אומר" — ואף משימה לא
+     שאלה את השאלה הפשוטה: המילה הזאת בכתב רש״י, מה היא?
+     בלי רמז משמעות. ההקראה מגיעה אחרי התשובה, לא לפניה. */
+  function readword(game, world) {
+    const lvls = game.lvl || [1, 2];
+    const pool = window.WORDS.filter(w => lvls.includes(w.lvl));
+    const words = pick(pool, Math.min(Q, pool.length));
+    const qs = words.map(w => {
+      const twins = twinVariants(w.t, 2, [w.t]);
+      const near = shuffle(pool.filter(x => x.p !== w.p)).map(x => x.t);
+      const distract = [...twins, ...near].slice(0, 3);
+      const options = shuffle([{ t: w.t, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
+      return {
+        prompt: (n) => n.appendChild(riddleCard([
+          el("div", { class: "big-word" }, [rashi(w.t)]),
+          ask("אֵיזוֹ מִלָּה זֹאת?")
+        ], "tight")),
+        options: options.map(o => ({
+          node: el("span", { class: "sqword" }, [square(window.stripNikud(o.t))]), ok: o.ok, t: o.t })),
+        explain: (o) => {
+          const d = diffLetter(o.t, w.t);
+          return whyWrongText(o.t, w.t, d
+            ? "אוֹת אַחַת: בָּחַרְתָּ " + NAME(d[0]) + ", וְצָרִיךְ " + NAME(d[1]) + ". " + (window.shortOf(d[1]) || "")
+            : null);
+        },
+        onShown: () => Audio2.speak(w.t),
+        onResult: (ok) => { State.recordResult("word:" + w.p, ok, 3); if (ok) Audio2.speak(w.t); }
       };
     });
     Games.runMC(game, world, qs);
@@ -628,7 +696,7 @@ window.Riddles = (function () {
 
   const TYPES = {
     "r-open": open, "r-sign": sign, "r-family": family, "r-detective": detective,
-    "r-word": word, "r-line": line, "r-fluent": fluent,
+    "r-word": word, "r-readword": readword, "r-line": line, "r-fluent": fluent,
     "r-grid": grid, "r-star": star, "r-abbr": abbrev
   };
   return { play: (g, w) => (TYPES[g.type] || sign)(g, w), TYPES, whyWrong, pairHint, whyWrongText };

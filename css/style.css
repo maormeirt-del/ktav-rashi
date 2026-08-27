@@ -614,3 +614,68 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .cmp b { flex: 0 0 auto; font-family: var(--font-display); font-size: .84rem; }
 .cmp.bad  { background: #fdecea; } .cmp.bad b  { color: #c0392b; }
 .cmp.good { background: #e9f9ef; } .cmp.good b { color: #1e7a48; }
+
+
+/* ===========================================================
+   רֶגַע לִמּוּד · מַפְתֵּחַ הַסִּימָנִים · הַצָּצָה · אֶתְגַּר שִׂיא
+   =========================================================== */
+
+/* --- כרטיס ההיכרות שלפני האשכול. בלי שעון, בלי נכון/לא נכון. --- */
+.learn { display: flex; flex-direction: column; gap: 14px; }
+.learn-fam { text-align: center; }
+.lf-name { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--ink); }
+.lf-ask { font-size: .9rem; line-height: 1.65; color: var(--muted); margin-top: 4px; }
+.learn-fam.boss .lf-name { color: var(--accent); }
+.learn-row { display: grid; gap: 8px; grid-template-columns: repeat(3, 1fr); }
+.learn-row.n2 { grid-template-columns: repeat(2, 1fr); }
+.learn-row.n4, .learn-row.n5 { grid-template-columns: repeat(4, 1fr); }
+.learn-cell { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px;
+  padding: 12px 6px 10px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  align-items: center; gap: 2px; cursor: pointer; font: inherit; color: var(--ink); }
+.lc-glyph { font-size: 2.9rem; line-height: 1.05; }
+.learn-row.n4 .lc-glyph, .learn-row.n5 .lc-glyph { font-size: 2.2rem; }
+.lc-sq { font-size: 1.05rem; color: var(--muted); opacity: .8; }
+.learn-cell b { font-family: var(--font-display); font-size: .8rem; margin-top: 3px; }
+.learn-cell small { font-size: .68rem; line-height: 1.4; color: var(--muted); text-align: center; }
+.learn-rule { background: hsla(45,80%,55%,.13); border-inline-start: 3px solid var(--gold);
+  border-radius: 10px; padding: 10px 12px; font-size: .88rem; line-height: 1.65; }
+.learn-rule span { display: block; font-family: var(--font-display); font-size: .72rem;
+  color: var(--muted); margin-bottom: 3px; }
+
+/* --- מפתח הסימנים: גיליון פתוח, לא תגמול --- */
+.keylink { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px;
+  align-items: center; background: var(--card); border: 1.5px solid var(--line);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; cursor: pointer;
+  box-shadow: var(--shadow); font: inherit; color: var(--ink); text-align: start; }
+.keylink span { grid-row: 1 / 3; font-size: 1.5rem; }
+.keylink b { font-family: var(--font-display); font-size: .98rem; }
+.keylink small { color: var(--muted); font-size: .76rem; }
+.keylink i { grid-row: 1 / 3; font-style: normal; color: var(--muted); font-size: 1.3rem; }
+.keysheet { display: flex; flex-direction: column; gap: 6px; }
+.ks-fam { margin-top: 12px; }
+.ks-fam b { font-family: var(--font-display); font-size: .95rem; }
+.ks-fam small { display: block; color: var(--muted); font-size: .76rem; line-height: 1.55; margin-top: 2px; }
+.ks-fam.boss b { color: var(--accent); }
+.ks-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 6px; }
+.ks-cell { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.ks-glyph { font-size: 2.1rem; line-height: 1.05; }
+.ks-sq { font-size: .95rem; color: var(--muted); }
+.ks-cell b { font-family: var(--font-display); font-size: .72rem; }
+.ks-cell small { font-size: .63rem; line-height: 1.35; color: var(--muted); text-align: center; }
+.ks-modal h3 { font-family: var(--font-display); text-align: center; margin-bottom: 8px; }
+.ks-modal .keysheet { max-height: 58vh; overflow-y: auto; }
+.ks-modal .btn { width: 100%; margin-top: 12px; }
+.kspage { padding-bottom: 20px; }
+
+/* --- כפתור ההצצה יושב ב-HUD, ליד השעון והניסיונות --- */
+.hud-peek { cursor: pointer; font: inherit; border: 0; background: hsla(200,60%,50%,.14);
+  color: var(--ink); font-size: .72rem; font-weight: 700; }
+
+/* --- "זאת התשובה, ממשיכים" — סגירת שאלה בעולם לימוד --- */
+.retry.moveon { color: #1e7a48; }
+
+/* --- אתגר שיא: מדור נפרד, לא שער באמצע --- */
+.bonus-sec { margin-top: 22px; }
+.game-card.bonus { border-color: var(--gold); }
+.game-card.bonus.locked { opacity: .55; filter: grayscale(.6); }
