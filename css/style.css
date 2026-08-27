@@ -34,7 +34,7 @@ body {
 #app { max-width: var(--maxw); margin: 0 auto; min-height: 100%; position: relative; }
 #screen { min-height: 100vh; }
 h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-title,
-.me-rank, .reward-name, .reward-title, .book-name, .onb-logo h1, .beit-card b, .bc-txt b,
+.me-rank, .reward-name, .reward-title, .onb-logo h1, .beit-card b, .bc-txt b,
 .daf-hero h2, .siman-head, .navbtn { font-family: var(--font-display); font-weight: 700; }
 .rashi  { font-family: "Rashi", "Frank Ruhl Libre", serif; }
 .square { font-family: var(--font-sans), "Times New Roman", serif; }
@@ -224,21 +224,6 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .arc-cell.used { opacity: .5; }
 
 /* ---------- ארון הספרים ---------- */
-.shelf { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-.book { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 18px 12px; cursor: pointer; box-shadow: var(--shadow); position: relative; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: transform .12s; }
-.book:active { transform: scale(.97); }
-.book.locked { opacity: .55; filter: grayscale(.5); }
-.book-icon { font-size: 2.6rem; }
-.book-name { font-weight: 800; text-align: center; font-size: .95rem; }
-.book-badge { position: absolute; top: 8px; inset-inline-end: 8px; font-size: .62rem; font-weight: 800; background: var(--line); color: var(--muted); padding: 2px 7px; border-radius: 999px; }
-.book-badge.new { background: var(--gold); color: #fff; }
-.reader { text-align: center; }
-.reader-icon { font-size: 3rem; }
-.reader h3 { margin: 4px 0 12px; }
-.reader-text { font-family: "Rashi", "Frank Ruhl Libre", serif; font-size: 1.9rem; line-height: 2.1; background: var(--bg1); border-radius: 16px; padding: 20px 16px; color: var(--ink); }
-.reader-text .square { font-family: system-ui, serif; font-size: 1.4rem; }
-.reader-actions { display: flex; gap: 10px; justify-content: center; margin: 14px 0; }
-.reader-blurb { color: var(--muted); font-size: .88rem; }
 
 /* ---------- הישגים ---------- */
 .me-hero { text-align: center; background: var(--card); border-radius: 22px; padding: 22px; box-shadow: var(--shadow); margin: 6px 0 14px; }
@@ -250,11 +235,6 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .streakcal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .streakcal i { aspect-ratio: 1; background: var(--card); border: 1px solid var(--line); border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem; }
 .streakcal i.on { background: hsla(35,90%,60%,.18); border-color: var(--gold); }
-.seals { display: flex; gap: 10px; justify-content: space-around; }
-.seal { text-align: center; flex: 1; }
-.seal-e { font-size: 2.2rem; display: block; }
-.seal small { font-size: .68rem; color: var(--muted); display: block; }
-.seal.off { opacity: .45; }
 .medals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .medal { background: var(--card); border-radius: 14px; padding: 12px 6px; text-align: center; box-shadow: var(--shadow); border-bottom: 3px solid var(--gold); }
 .medal.bronze { border-color: #cd7f32; } .medal.silver { border-color: #b8c0c8; } .medal.gold { border-color: #f4b731; }
@@ -739,3 +719,7 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .read-meter b { font-family: var(--font-display); font-size: .86rem; }
 .read-meter span { font-size: .78rem; color: var(--muted); }
 .tap-note { display: block; width: 100%; margin-top: 3px; font-size: .72rem; color: var(--muted); }
+
+
+/* פרק נעול בבית המדרש — נפתח בסיום עולם, לא בקנייה */
+.lib-tab.locked { opacity: .5; }

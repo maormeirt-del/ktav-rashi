@@ -13,7 +13,7 @@ window.App = (function () {
     if (h.indexOf("play/") === 0) { const id = h.split("/")[1]; if (window.GAMEHALL.some(g => g.id === id)) return GameHall.play(id); }
     if (h && window.worldById(h)) return world(h);
     if (h === "key") return keySheet();
-    if (["home", "beit", "games", "shelf", "me"].includes(h)) return go(h);
+    if (["home", "beit", "games", "me"].includes(h)) return go(h);
     go("home");
   }
 
@@ -61,12 +61,10 @@ window.App = (function () {
     if (route === "home") return home();
     if (route === "beit") return beit();
     if (route === "games") return GameHall.hall();
-    if (route === "shelf") return shelf();
     if (route === "me") return me();
   }
 
   /* ---------------- בֵּית הַמִּדְרָשׁ ---------------- */
-  const LIB_MAP = { chumash: "chumash", "mishna-brura": "halacha" };
   function beit() {
     /* נְקֻדּוֹת קְרִיאָה, לא נקודות סתם: את בבא קמא פותחת קריאה,
        לא ניצחון ב-2048. ראה award() ב-state.js. */
@@ -106,6 +104,7 @@ window.App = (function () {
     const data = window.LIBRARY[kind];
     const items = data.perakim || data.simanim || data.dapim;
     idx = Math.min(Math.max(0, idx || 0), items.length - 1);
+    if (!State.unitUnlocked(kind, idx)) idx = State.libDepth(kind);
     const cur = items[idx];
     const daf = el("div", { class: "daf" });
     const hero = el("div", { class: "daf-hero", style: `--hue:${kind === "chumash" ? 355 : kind === "gemara" ? 25 : 210}` }, [
@@ -114,9 +113,13 @@ window.App = (function () {
       el("h2", {}, [data.title]), el("p", {}, [data.sub])
     ]);
     // בורר פרק/סימן
-    const selector = el("div", { class: "lib-sel" }, items.map((it, i) =>
-      el("button", { class: "lib-tab" + (i === idx ? " on" : ""), onclick: () => libraryReader(kind, i) },
-        [kind === "chumash" ? "פֶּרֶק " + it.n : kind === "gemara" ? it.n : "סִימָן " + it.n])));
+    /* ד3 — כל פרק/סימן/דף נפתח בסיום עולם, במקום כרטיס-קטע בארון */
+    const selector = el("div", { class: "lib-sel" }, items.map((it, i) => {
+      const open = State.unitUnlocked(kind, i);
+      return el("button", { class: "lib-tab" + (i === idx ? " on" : "") + (open ? "" : " locked"),
+        onclick: () => open ? libraryReader(kind, i) : UI.toast("נִפְתָּח בְּסִיּוּם עוֹלָם נוֹסָף 🔒") },
+        [(open ? "" : "🔒 ") + window.libUnitName(kind, i)]);
+    }));
     /* ג5 — כפתור אחד שהחליף את *כל* הדף למרובע הפך את מי שנתקע
        במילה אחת למי שהופך עמוד שלם. כאן החשיפה היא לפי מילה בנגיעה,
        והמונה הוא מדד כן: כמה קראת באמת מול כמה הצצת. */
@@ -265,13 +268,17 @@ window.App = (function () {
 
   function home() {
     const body = el("div", { class: "home" });
-    // אתגר יומי + מסע
-    const d = State.daily();
+    /* ד5 — רצף ואתגר יומי היו שתי מערכות תגמול נפרדות על אותו מסך.
+       הן אותו דבר: "בוא כל יום". כרטיס אחד. */
+    const d = State.daily(), st = State.progress.streak.count;
     const daily = el("div", { class: "daily" + (d.met ? " met" : "") }, [
-      el("div", {}, [el("b", {}, ["🎯 אֶתְגָּר יוֹמִי"]), el("small", {}, [`${Math.min(d.games, d.goal)}/${d.goal} מִשְׂחָקִים`])]),
+      el("div", {}, [
+        el("b", {}, ["🔥 " + st + (st === 1 ? " יוֹם רָצוּף" : " יָמִים רְצוּפִים")]),
+        el("small", {}, [`הַיּוֹם: ${Math.min(d.games, d.goal)}/${d.goal} מְשִׂימוֹת`])
+      ]),
       d.met && !d.claimed
         ? el("button", { class: "btn primary sm", onclick: () => { const r = State.claimDaily(); if (r) { UI.burst(); UI.toast("+" + r + " נְקֻדּוֹת!"); home(); } } }, ["קַבֵּל +" + d.reward])
-        : el("div", { class: "daily-x" }, [d.claimed ? "✓ נֶאֱסַף" : "בְּתַהֲלִיךְ"])
+        : el("div", { class: "daily-x" }, [d.claimed ? "✓ נֶאֱסַף" : d.met ? "✓" : "בְּתַהֲלִיךְ"])
     ]);
     body.appendChild(daily);
 
@@ -325,10 +332,10 @@ window.App = (function () {
       el("div", { class: "wh-emoji" }, [w.emoji]),
       el("h2", {}, [w.title]), el("p", {}, [w.sub])
     ]));
-    if (w.opens) {
-      const sef = window.SEFORIM.find(s => s.id === w.opens);
-      if (sef) body.appendChild(el("div", { class: "unlock-hint" }, [`🎁 סַיֵּם אֶת הָעוֹלָם → נִפְתָּח: ${sef.icon} ${sef.name}`]));
-    }
+    const opens = (window.OPENS || {})[w.id];
+    if (opens && !State.progress.worldsDone[w.id]) body.appendChild(el("div", { class: "unlock-hint" }, [
+      `🎁 סַיֵּם אֶת הָעוֹלָם → נִפְתָּח בְּבֵית הַמִּדְרָשׁ: ${window.libIcon(opens.kind)} ${window.libTitle(opens.kind)} · ${window.libUnitName(opens.kind, opens.depth)}`
+    ]));
     const list = el("div", { class: "game-list" });
     w.games.filter(g => !g.bonus).forEach(g => {
       const done = State.isDone(g.id);
@@ -360,46 +367,6 @@ window.App = (function () {
     UI.setScreen(el("div", { class: "page" }, [body, UI.nav("home")]));
   }
 
-  /* ---------------- ארון הספרים ---------------- */
-  function shelf() {
-    const body = el("div", { class: "shelfscr" });
-    body.appendChild(el("h2", { class: "map-title" }, ["📚 אֲרוֹן הַסְּפָרִים שֶׁלִּי"]));
-    body.appendChild(el("p", { class: "sub-lead" }, ["כָּל סֵפֶר נִפְתָּח כְּשֶׁתְּסַיֵּם עוֹלָם — וְאָז אֶפְשָׁר לִקְרֹא בּוֹ בֶּאֱמֶת."]));
-    const grid = el("div", { class: "shelf" });
-    State.seforimState().forEach(s => {
-      const card = el("button", { class: "book" + (s.unlocked ? "" : " locked"), onclick: () => s.unlocked ? openBook(s) : UI.toast("סַיֵּם עוֹד עוֹלָם כְּדֵי לִפְתֹּחַ 🔒") }, [
-        el("div", { class: "book-icon" }, [s.unlocked ? s.icon : "🔒"]),
-        el("div", { class: "book-name" }, [s.name]),
-        s.opened ? el("span", { class: "book-badge" }, ["נִקְרָא ✓"]) : (s.unlocked ? el("span", { class: "book-badge new" }, ["חָדָשׁ!"]) : null)
-      ]);
-      grid.appendChild(card);
-    });
-    body.appendChild(grid);
-    UI.page("shelf", body);
-    drain();
-  }
-  function openBook(s) {
-    State.openSefer(s.id, true);
-    if (LIB_MAP[s.id]) return libraryReader(LIB_MAP[s.id]);
-    reader(s);
-  }
-  function reader(s) {
-    State.openSefer(s.id, true);
-    let sq = false;
-    const passage = el("div", { class: "reader-text" }, [rashi(s.snippet)]);
-    const inner = el("div", { class: "reader" }, [
-      el("div", { class: "reader-icon" }, [s.icon]),
-      el("h3", {}, [s.name]),
-      passage,
-      el("div", { class: "reader-actions" }, [
-        el("button", { class: "btn ghost", onclick: () => Audio2.speak(s.snippet.replace(/[֑-ׇ]/g, ""), 0.85) }, ["🔊 הַקְרֵא"]),
-        el("button", { class: "btn ghost", onclick: (e) => { sq = !sq; passage.innerHTML = ""; passage.appendChild(sq ? square(s.snippet) : rashi(s.snippet)); e.target.textContent = sq ? "✏️ רָשִׁ״י" : "🔤 מְרֻבָּע"; } }, ["🔤 מְרֻבָּע"])
-      ]),
-      el("p", { class: "reader-blurb" }, [s.blurb])
-    ]);
-    UI.modal(inner);
-  }
-
   /* ---------------- הישגים / פרופיל ---------------- */
   function me() {
     const p = State.progress, r = State.rank();
@@ -410,6 +377,7 @@ window.App = (function () {
       el("div", { class: "me-rank" }, [r.name]),
       el("div", { class: "me-nums" }, [
         el("span", {}, ["✦ " + p.points + " נְקֻדּוֹת"]),
+        el("span", {}, ["📖 " + p.readPoints + " נְקֻדּוֹת קְרִיאָה"]),
         el("span", {}, ["🔤 " + p.mastered + " אוֹתִיּוֹת נִשְׁלְטוּ"]),
         el("span", {}, ["🔥 " + p.streak.count + " רֶצֶף"])
       ])
@@ -418,15 +386,6 @@ window.App = (function () {
     // רצף 14 יום
     body.appendChild(el("h3", { class: "sec" }, ["לוּחַ הַתְמָדָה"]));
     body.appendChild(el("div", { class: "streakcal" }, State.last14().map(d => el("i", { class: d.read ? "on" : "" }, [d.read ? "🕯️" : ""]))));
-
-    // חותמות
-    body.appendChild(el("h3", { class: "sec" }, ["חוֹתְמוֹת הַמַּדְפִּיסִים"]));
-    body.appendChild(el("div", { class: "seals" }, window.SEALS.map(sl => {
-      const has = p.seals.includes(sl.id);
-      return el("div", { class: "seal" + (has ? "" : " off"), title: sl.note, onclick: () => UI.toast(has ? sl.note : "עֲדַיִן נָעוּל 🔒") }, [
-        el("span", { class: "seal-e" }, [has ? sl.emoji : "🔒"]), el("small", {}, [sl.name])
-      ]);
-    })));
 
     // מדליות
     body.appendChild(el("h3", { class: "sec" }, ["מֶדַלְיוֹת"]));
@@ -451,7 +410,7 @@ window.App = (function () {
 
   function drain() { UI.drainRewards(); }
 
-  return { boot, go, world, home, shelf, me, keySheet, dailyReview, game: (wid, gid) => { const w = window.worldById(wid); Games.play(w.games.find(g => g.id === gid), w); } };
+  return { boot, go, world, home, me, keySheet, dailyReview, game: (wid, gid) => { const w = window.worldById(wid); Games.play(w.games.find(g => g.id === gid), w); } };
 })();
 
 document.addEventListener("DOMContentLoaded", () => App.boot());

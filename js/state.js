@@ -13,7 +13,7 @@ window.State = (function () {
   function defaultProgress() {
     return {
       points: 0, readPoints: 0, done: {}, sr: {}, session: 0,
-      worldsDone: {}, opened: {}, seals: [], medals: [],
+      worldsDone: {}, opened: {}, medals: [],
       mastered: 0, peeks: 0, pace: [],
       streak: { count: 0, last: null }, readDays: {},
       daily: { date: null, games: 0, points: 0, claimed: false },
@@ -38,11 +38,10 @@ window.State = (function () {
   const save = () => localStorage.setItem(GKEY, JSON.stringify(progress));
 
   /* ---- תורים לפופ-אפים (דרגה/מדליה/חותם/ספר חדשים) ---- */
-  const queue = { rank: [], medal: [], seal: [], sefer: [] };
+  const queue = { rank: [], medal: [], unit: [] };
   function popRank()  { return queue.rank.shift(); }
   function popMedal() { return queue.medal.shift(); }
-  function popSeal()  { return queue.seal.shift(); }
-  function popSefer() { return queue.sefer.shift(); }
+  function popUnit()  { return queue.unit.shift(); }
 
   /* ---- נקודות + דרגה ---- */
   function rollDaily() {
@@ -119,31 +118,28 @@ window.State = (function () {
     if (!worldId || progress.worldsDone[worldId]) return;
     if (!worldComplete(worldId)) return;
     progress.worldsDone[worldId] = true;
-    const w = window.worldById(worldId);
-    // פתיחת ספר בארון
-    if (w && w.opens) openSefer(w.opens, /*silent*/ false);
-    // חותם מדפיס
-    (window.SEALS || []).forEach(sl => {
-      if (sl.when === worldId && !progress.seals.includes(sl.id)) {
-        progress.seals.push(sl.id); queue.seal.push(sl);
-      }
-    });
+    openUnit(worldId);
   }
 
-  /* ---- אֲרוֹן הַסְּפָרִים ---- */
-  function seferUnlocked(sef) {
-    if (!sef.unlock) return true;              // ספר פתיחה
-    return !!progress.worldsDone[sef.unlock];
+  /* ---- בֵּית הַמִּדְרָשׁ: מָה נִפְתַּח ----
+     סיום עולם מעמיק את הספר: depth = עד איזה פרק/סימן/דף מגיעים.
+     יחידה 0 פתוחה תמיד (בכפוף לסף נקודות הקריאה). */
+  function libDepth(kind) {
+    let d = 0;
+    Object.keys(window.OPENS || {}).forEach(wid => {
+      const o = window.OPENS[wid];
+      if (o.kind === kind && progress.worldsDone[wid]) d = Math.max(d, o.depth);
+    });
+    return d;
   }
-  function openSefer(id, silent) {
-    const sef = (window.SEFORIM || []).find(s => s.id === id); if (!sef) return;
-    if (!progress.opened[id]) { progress.opened[id] = true; if (!silent) queue.sefer.push(sef); }
+  function unitUnlocked(kind, idx) { return idx <= libDepth(kind); }
+  function openUnit(worldId) {
+    const o = (window.OPENS || {})[worldId]; if (!o) return;
+    const key = o.kind + ":" + o.depth;
+    if (progress.opened[key]) return;
+    progress.opened[key] = true;
+    queue.unit.push({ kind: o.kind, idx: o.depth });
     save();
-  }
-  function seforimState() {
-    return (window.SEFORIM || []).map(s => ({
-      ...s, unlocked: seferUnlocked(s), opened: !!progress.opened[s.id]
-    }));
   }
 
   /* ---- רֶצֶף ימים ---- */
@@ -207,9 +203,9 @@ window.State = (function () {
     save,
     award, recordResult, boxOf, dueChars, startSession, recountMastery,
     isDone, markGameDone, worldComplete,
-    seferUnlocked, openSefer, seforimState,
+    libDepth, unitUnlocked,
     touchStreak, last14, daily, claimDaily,
     rank, nextRank, rankProgress,
-    popRank, popMedal, popSeal, popSefer, reset
+    popRank, popMedal, popUnit, reset
   };
 })();

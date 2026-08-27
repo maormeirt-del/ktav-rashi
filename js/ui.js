@@ -58,15 +58,14 @@ window.UI = (function () {
     return { close, box };
   }
 
-  /* ---- ריקון תור תגמולים (ספר/חותם/מדליה/דרגה) ---- */
+  /* ---- ריקון תור תגמולים (פרק חדש בבית המדרש / דרגה / מדליה) ---- */
   function drainRewards(done) {
-    const sefer = State.popSefer();
-    if (sefer) return rewardCard({
-      kind: "sefer", emoji: sefer.icon, title: "נִפְתַּח סֵפֶר חָדָשׁ!",
-      name: sefer.name, note: sefer.blurb, big: true
+    const unit = State.popUnit();
+    if (unit) return rewardCard({
+      kind: "sefer", emoji: window.libIcon(unit.kind), title: "נִפְתַּח בְּבֵית הַמִּדְרָשׁ!",
+      name: window.libTitle(unit.kind) + " · " + window.libUnitName(unit.kind, unit.idx),
+      note: "טֶקְסְט אֲמִתִּי, לֹא קֶטַע לְדֻגְמָה. לְחַץ עַל 'מִדְרָשׁ' לְמַטָּה.", big: true
     }, () => drainRewards(done));
-    const seal = State.popSeal();
-    if (seal) return rewardCard({ kind: "seal", emoji: seal.emoji, title: "חוֹתָם חָדָשׁ!", name: seal.name, note: seal.note }, () => drainRewards(done));
     const rank = State.popRank();
     if (rank) return rewardCard({ kind: "rank", emoji: rank.emoji, title: "עָלִיתָ דַּרְגָּה!", name: rank.name }, () => drainRewards(done));
     const medal = State.popMedal();
@@ -74,7 +73,7 @@ window.UI = (function () {
     done && done();
   }
   function rewardCard(o, next) {
-    Audio2.sfx[o.kind === "sefer" || o.kind === "seal" ? "unlock" : "reward"]();
+    Audio2.sfx[o.kind === "sefer" ? "unlock" : "reward"]();
     burst(o.kind === "sefer" ? ["📖", "✨", "🕯️", "🌟"] : ["✨", "🌟", "💫"]);
     const inner = el("div", { class: "reward " + o.kind }, [
       el("div", { class: "reward-emoji" }, [o.emoji]),
@@ -111,8 +110,7 @@ window.UI = (function () {
     const items = [
       { id: "home",  emoji: "🗺️", label: "מַסָּע" },
       { id: "beit",  emoji: "📖", label: "מִדְרָשׁ" },
-      { id: "games", emoji: "🎲", label: "מִשְׂחָקִים" },
-      { id: "shelf", emoji: "📚", label: "אָרוֹן" },
+      { id: "games", emoji: "🎲", label: "הַפְסָקָה" },
       { id: "me",    emoji: "🏅", label: "הֶשֵּׂגִים" }
     ];
     return el("nav", { class: "bottomnav" }, items.map(it =>

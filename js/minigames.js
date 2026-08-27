@@ -37,26 +37,31 @@ window.GameHall = (function () {
   }
 
   /* ---------------- אולם ---------------- */
+  /* ד2 — שני מדורים, ואף אחד מהם אינו תגמול:
+     תרגול (זיכרון רש״י↔מרובע) והפסקה (השאר). הכל פתוח מההתחלה,
+     והנקודות מכאן אינן נקודות קריאה. */
   function hall() {
-    const pts = State.progress.points;
     const body = el("div", { class: "hallscr" });
-    body.appendChild(el("h2", { class: "map-title" }, ["אוּלַם הַמִּשְׂחָקִים 🎲"]));
-    body.appendChild(el("p", { class: "sub-lead" }, [`מִשְׂחֲקֵי חֲשִׁיבָה — נִפְתָּחִים לְפִי נְקֻדּוֹת. יֵשׁ לְךָ ✦ ${pts}. הַהֶסְבֵּרִים בִּכְתָב רָשִׁ״י!`]));
-    const grid = el("div", { class: "hall-grid" });
-    window.GAMEHALL.forEach(g => {
-      const open = pts >= g.unlock;
-      const card = el("button", { class: "hgame" + (open ? "" : " locked"), onclick: () => open ? intro(g) : UI.toast(`נִפְתָּח בְּ-${g.unlock} נְקֻדּוֹת (חָסֵר ${g.unlock - pts})`) }, [
-        el("span", { class: "hg-emoji" }, [open ? g.emoji : "🔒"]),
+    const card = (g) => {
+      const c = el("button", { class: "hgame", onclick: () => intro(g) }, [
+        el("span", { class: "hg-emoji" }, [g.emoji]),
         el("span", { class: "hg-name" }, [g.name]),
-        el("span", { class: "hg-tag" }, [open ? "שַׂחֵק ›" : `${g.unlock} נק׳`])
+        el("span", { class: "hg-tag" }, ["שַׂחֵק ›"])
       ]);
-      if (!open) {
-        const prog = Math.min(1, pts / g.unlock);
-        card.appendChild(el("span", { class: "hg-bar" }, [el("i", { style: `width:${Math.round(prog * 100)}%` })]));
-      }
-      grid.appendChild(card);
-    });
-    body.appendChild(grid);
+      return c;
+    };
+    const rashiGames = window.GAMEHALL.filter(g => g.kind === "rashi");
+    const breakGames = window.GAMEHALL.filter(g => g.kind !== "rashi");
+
+    body.appendChild(el("h2", { class: "map-title" }, ["תִּרְגּוּל וְהַפְסָקָה 🎲"]));
+    body.appendChild(el("h3", { class: "sec" }, ["תִּרְגּוּל כְּתָב רָשִׁ״י"]));
+    body.appendChild(el("p", { class: "sub-lead" }, ["זוּגוֹת רָשִׁ״י ↔ מְרֻבָּע. זֶה מְאַמֵּן, וְלָכֵן הוּא כָּאן."]));
+    body.appendChild(el("div", { class: "hall-grid" }, rashiGames.map(card)));
+
+    body.appendChild(el("h3", { class: "sec" }, ["הַפְסָקָה"]));
+    body.appendChild(el("p", { class: "sub-lead" }, ["מִשְׂחֲקֵי חֲשִׁיבָה שֶׁאֵין לָהֶם קֶשֶׁר לִכְתָב רָשִׁ״י. פְּתוּחִים תָּמִיד — הֵם לֹא פְּרָס, וְהַנְּקֻדּוֹת מִכָּאן לֹא פּוֹתְחוֹת סְפָרִים. הַהֶסְבֵּרִים בִּכְתָב רָשִׁ״י."]));
+    body.appendChild(el("div", { class: "hall-grid" }, breakGames.map(card)));
+
     UI.setScreen(el("div", { class: "page" }, [body, UI.nav("games")]));
     UI.drainRewards();
   }
