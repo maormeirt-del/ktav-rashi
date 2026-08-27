@@ -117,26 +117,51 @@ window.App = (function () {
     const selector = el("div", { class: "lib-sel" }, items.map((it, i) =>
       el("button", { class: "lib-tab" + (i === idx ? " on" : ""), onclick: () => libraryReader(kind, i) },
         [kind === "chumash" ? "פֶּרֶק " + it.n : kind === "gemara" ? it.n : "סִימָן " + it.n])));
-    // כפתור-רמז גלובלי: החלף כתב רש״י ↔ מרובע
-    let sq = false;
-    const toggle = el("button", { class: "sq-toggle", onclick: () => {
-      sq = !sq; daf.classList.toggle("show-square", sq);
-      toggle.textContent = sq ? "✏️ חֲזֹר לְרָשִׁ״י" : "🔤 הַצֵּג מְרֻבָּע";
-    } }, ["🔤 הַצֵּג מְרֻבָּע"]);
+    /* ג5 — כפתור אחד שהחליף את *כל* הדף למרובע הפך את מי שנתקע
+       במילה אחת למי שהופך עמוד שלם. כאן החשיפה היא לפי מילה בנגיעה,
+       והמונה הוא מדד כן: כמה קראת באמת מול כמה הצצת. */
+    const meter = el("div", { class: "read-meter" });
+    function paintMeter() {
+      meter.innerHTML = "";
+      meter.appendChild(el("b", {}, ["קָרָאתָ " + (libWords - libPeeks) + " מִלִּים"]));
+      meter.appendChild(el("span", {}, [libPeeks ? "הֵצַצְתָּ בְּ-" + libPeeks : "בְּלִי אַף הַצָּצָה ✓"]));
+    }
 
     const scroll = el("div", { class: "daf-scroll" });
+    libWords = 0; libPeeks = 0; paintMeterRef = paintMeter;
     if (kind === "chumash") cur.units.forEach(u => scroll.appendChild(chumashUnit(u)));
     else if (kind === "gemara") cur.units.forEach(u => scroll.appendChild(gemaraUnit(u)));
     else scroll.appendChild(halachaSiman(cur));
     if (data.credit) scroll.appendChild(el("div", { class: "lib-credit" }, [data.credit]));
     daf.appendChild(scroll);
+    paintMeter();
 
-    UI.setScreen(el("div", { class: "page daf-page" }, [hero, selector, el("div", { class: "daf-tools" }, [toggle]), daf, UI.nav("beit")]));
+    UI.setScreen(el("div", { class: "page daf-page" }, [
+      hero, selector,
+      el("div", { class: "daf-tools" }, [meter, el("small", { class: "tap-note" }, ["נִתְקַעְתָּ בְּמִלָּה? גַּע בָּהּ."])]),
+      daf, UI.nav("beit")]));
   }
 
-  function rashiTxt(s) {   // כתב רש״י לא-מנוקד, מתחלף למרובע ע״י .show-square
+  /* מונה לכל דף — נספר בזמן הבנייה, ומתעדכן בכל נגיעה */
+  let libWords = 0, libPeeks = 0, paintMeterRef = null;
+  function rashiTxt(s) {   // כתב רש״י לא-מנוקד; נגיעה במילה חושפת אותה במרובע
     const span = el("span", { class: "rt" });
-    span.innerHTML = window.stripNikud(s);
+    const words = window.stripNikud(s).split(/(\s+)/);
+    words.forEach(w => {
+      if (!w.trim()) { span.appendChild(document.createTextNode(w)); return; }
+      libWords++;
+      const ws = el("span", { class: "rw" }, [w]);
+      ws.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (ws.classList.contains("shown")) return;
+        ws.classList.add("shown");
+        libPeeks++;
+        State.progress.peeks = (State.progress.peeks || 0) + 1; State.save();
+        Audio2.sfx.tap();
+        paintMeterRef && paintMeterRef();
+      });
+      span.appendChild(ws);
+    });
     return span;
   }
   function chumashUnit(u) {
@@ -230,6 +255,14 @@ window.App = (function () {
     UI.setScreen(el("div", { class: "page" }, [body, UI.nav("home")]));
   }
 
+  /* מזהה לפי יום: החזרה מזכה בנקודות פעם ביום, לא בכל לחיצה */
+  function dailyReview() {
+    const day = new Date().toISOString().slice(0, 10);
+    const w = { id: "w6", games: [] };
+    const world = window.worldById("w6") || w;
+    Riddles.play({ id: "due-" + day, type: "r-due", title: "חֲזָרָה יוֹמִית", emoji: "🔁", tries: 3, limit: 90 }, world);
+  }
+
   function home() {
     const body = el("div", { class: "home" });
     // אתגר יומי + מסע
@@ -241,6 +274,16 @@ window.App = (function () {
         : el("div", { class: "daily-x" }, [d.claimed ? "✓ נֶאֱסַף" : "בְּתַהֲלִיךְ"])
     ]);
     body.appendChild(daily);
+
+    /* ג3 — לולאה יומית. "מומלץ" מצביע על העולם הבא שלא הושלם,
+       ואחרי שהכל הושלם — על כלום. החזרה היומית תמיד יש לה מה לתת. */
+    const dueN = (window.Riddles && Riddles.dailyCount) ? Riddles.dailyCount() : 0;
+    if (dueN) body.appendChild(el("button", { class: "duelink", onclick: dailyReview }, [
+      el("span", {}, ["🔁"]),
+      el("b", {}, ["חֲזָרָה יוֹמִית"]),
+      el("small", {}, [dueN + " פְּרִיטִים מְחַכִּים לַחֲזָרָה — אוֹתִיּוֹת, קִצּוּרִים וּמִלִּים"]),
+      el("i", {}, ["›"])
+    ]));
 
     body.appendChild(el("button", { class: "keylink", onclick: () => keySheet() }, [
       el("span", {}, ["🗝️"]),
@@ -408,7 +451,7 @@ window.App = (function () {
 
   function drain() { UI.drainRewards(); }
 
-  return { boot, go, world, home, shelf, me, keySheet, game: (wid, gid) => { const w = window.worldById(wid); Games.play(w.games.find(g => g.id === gid), w); } };
+  return { boot, go, world, home, shelf, me, keySheet, dailyReview, game: (wid, gid) => { const w = window.worldById(wid); Games.play(w.games.find(g => g.id === gid), w); } };
 })();
 
 document.addEventListener("DOMContentLoaded", () => App.boot());

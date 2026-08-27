@@ -152,15 +152,18 @@ window.WORLDS = [
       { id: "w4-word",  type: "r-readword", title: "מָה כָּתוּב כָּאן?", emoji: "👁️", lvl: [1, 2] },
       { id: "w4-read1", type: "r-word", title: "מִלִּים קְצָרוֹת", emoji: "🔤", lvl: [1, 2] },
       { id: "w4-fill",  type: "r-word", title: "מֻשָּׂגִים", emoji: "🧩", lvl: [2, 3] },
-      { id: "w4-word2", type: "r-readword", title: "מִלִּים אֲרֻכּוֹת — מָה כָּתוּב?", emoji: "🔎", lvl: [3, 4] },
+      { id: "w4-word2", type: "r-readword", title: "מִלִּים אֲרֻכּוֹת — מָה כָּתוּב?", emoji: "🔎", lvl: [3, 4], nik: "part" },
       { id: "w4-read2", type: "r-word", title: "מִלִּים גְּדוֹלוֹת", emoji: "📚", lvl: [3, 4] }
     ] },
 
   { id: "w5", title: "מִלָּה נֶעֶלְמָה", emoji: "🟣", hue: 275,
     sub: "קֶטַע רָשִׁ״י אֲמִתִּי עִם חוֹר. הַהֶסְבֵּר הוּא הָרֶמֶז", opens: "mishna-brura",
     games: [
-      { id: "w5-read",  type: "r-line", title: "חִידַת הַשּׁוּרָה", emoji: "📜", lvl: 5 },
-      { id: "w5-read2", type: "r-line", title: "שׁוּרוֹת אֲרֻכּוֹת", emoji: "📖", lvl: 6 }
+      { id: "w5-read",  type: "r-line", title: "חִידַת הַשּׁוּרָה", emoji: "📜", lvl: 5, nik: "full" },
+      /* סֻלַּם הַנִּקּוּד: מלא → חלקי → בלי. עד היום כל האימון היה מנוקד
+         והיעד (רש״י על הש״ס) אינו מנוקד — קפיצה חדה בלי שלב ביניים. */
+      { id: "w5-read2", type: "r-line", title: "שׁוּרוֹת אֲרֻכּוֹת", emoji: "📖", lvl: 6, nik: "full" },
+      { id: "w5-part",  type: "r-line", title: "נִקּוּד חֶלְקִי", emoji: "🌗", lvl: 6, nik: "part" }
     ] },
 
   /* העולם שנעדר מהאפליקציה עד היום, והוא לב החוברת */
@@ -176,8 +179,13 @@ window.WORLDS = [
   { id: "w6", title: "בְּלִי רְמָזִים", emoji: "🟠", hue: 25,
     sub: "אֵין רֶמֶז וְאֵין עֵזֶר. רַק אַתָּה וְהַכְּתָב", opens: "gemara",
     games: [
-      { id: "w6-read",  type: "r-fluent", title: "קֶטַע מָלֵא", emoji: "🦅", lvl: 6 },
-      { id: "w6-daily", type: "r-fluent", title: "חִידַת הַשֶּׁטֶף", emoji: "🏁", lvl: 6 }
+      { id: "w6-read",  type: "r-fluent", title: "קֶטַע מָלֵא", emoji: "🦅", lvl: 6, nik: "part" },
+      { id: "w6-daily", type: "r-fluent", title: "חִידַת הַשֶּׁטֶף", emoji: "🏁", lvl: 6, nik: "none" },
+      /* הפעולה האמיתית על הדף: לראות מילה, לחפש את הדיבור המתחיל,
+         ולקרוא את הפירוש. 5 דפי בבא קמא ישבו כאן בלי שאף משימה נגעה בהם. */
+      { id: "w6-find",  type: "r-find", title: "מְצָא אֶת רָשִׁ״י", emoji: "🔍", limit: 100 },
+      /* שטף נמדד בקצב, לא בציון. מול העצמי בלבד. */
+      { id: "w6-pace",  type: "r-pace", title: "קְרִיאָה חוֹזֶרֶת · מַד קֶצֶב", emoji: "⏱️", lvl: 6, nik: "none" }
     ] }
 ];
 window.worldById = (id) => window.WORLDS.find(w => w.id === id);

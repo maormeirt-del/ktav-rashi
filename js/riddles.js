@@ -137,6 +137,12 @@ window.Riddles = (function () {
      שהתלמיד קורא בתרגול. הנוסח המלא שמור לרגע הטעות. */
   function hint(c) { return el("div", { class: "hint-chip" }, [window.shortOf(c)]); }
   function ask(txt) { return el("div", { class: "riddle-ask" }, [txt]); }
+  /* דרגת הניקוד היא חלק מהמשימה, ולכן היא כתובה על המסך */
+  const nikOf = (game) => game.nik || "full";
+  function nikTag(game) {
+    const n = nikOf(game);
+    return n === "full" ? null : el("span", { class: "nik-tag " + n }, [window.NIK_LABEL[n]]);
+  }
 
   function poolChars(name) {
     if (name === "easy") return window.easyLetters().map(l => l.c);
@@ -427,21 +433,23 @@ window.Riddles = (function () {
     const lvls = game.lvl || [1, 2];
     const pool = window.WORDS.filter(w => lvls.includes(w.lvl));
     const words = pick(pool, Math.min(Q, pool.length));
+    const nik = nikOf(game);
     const qs = words.map(w => {
-      const twins = twinVariants(w.t, 2, [w.t]);
-      const near = shuffle(pool.filter(x => x.p !== w.p)).map(x => x.t);
+      const T = window.applyNik(w.t, nik);
+      const twins = twinVariants(T, 2, [T]);
+      const near = shuffle(pool.filter(x => x.p !== w.p)).map(x => window.applyNik(x.t, nik));
       const distract = [...twins, ...near].slice(0, 3);
-      const options = shuffle([{ t: w.t, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
+      const options = shuffle([{ t: T, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
       return {
         prompt: (n) => n.appendChild(riddleCard([
-          el("div", { class: "big-word" }, [rashi(w.t)]),
-          ask("אֵיזוֹ מִלָּה זֹאת?")
+          el("div", { class: "big-word" }, [rashi(T)]),
+          ask("אֵיזוֹ מִלָּה זֹאת?"), nikTag(game)
         ], "tight")),
         options: options.map(o => ({
           node: el("span", { class: "sqword" }, [square(window.stripNikud(o.t))]), ok: o.ok, t: o.t })),
         explain: (o) => {
-          const d = diffLetter(o.t, w.t);
-          return whyWrongText(o.t, w.t, d
+          const d = diffLetter(o.t, T);
+          return whyWrongText(o.t, T, d
             ? "אוֹת אַחַת: בָּחַרְתָּ " + NAME(d[0]) + ", וְצָרִיךְ " + NAME(d[1]) + ". " + (window.shortOf(d[1]) || "")
             : null);
         },
@@ -459,7 +467,7 @@ window.Riddles = (function () {
     const list = window.passagesByLevel(game.lvl || 5).filter(p => p.t.split(" ").length >= 4);
     const chosen = pick(list, Math.min(4, list.length));
     const qs = chosen.map(p => {
-      const ws = p.t.split(" "), ps = p.plain.split(" ");
+      const ws = window.applyNik(p.t, nikOf(game)).split(" "), ps = p.plain.split(" ");
       const wi = 1 + Math.floor(Math.random() * (ws.length - 1));
       const answer = ws[wi];
       const masked = ws.map((x, i) => i === wi ? '<b class="blank">◻◻◻</b>' : x).join(" ");
@@ -471,7 +479,7 @@ window.Riddles = (function () {
       return {
         prompt: (n) => {
           n.appendChild(riddleCard([
-            el("div", { class: "src" }, [p.src]),
+            el("div", { class: "src" }, [p.src, nikTag(game)]),
             el("div", { class: "passage masked", html: '<span class="rashi">' + masked + "</span>" }),
             el("div", { class: "hint-chip wrap" }, [p.tr])
           ], "tight"));
@@ -506,8 +514,8 @@ window.Riddles = (function () {
           rows: [["הַקֶּטַע", p.src]] });
       }, { tries: Games.triesFor(game, world), limit: game.limit, peek: true });
       body.appendChild(riddleCard([
-        el("div", { class: "src" }, [p.src]),
-        el("div", { class: "passage" }, [rashi(p.t)])
+        el("div", { class: "src" }, [p.src, nikTag(game)]),
+        el("div", { class: "passage" }, [rashi(window.applyNik(p.t, nikOf(game)))])
       ]));
       body.appendChild(el("button", { class: "btn primary big", onclick: solve }, ["קָרָאתִי — לַחִידָה ›"]));
       ch.start();
@@ -515,7 +523,7 @@ window.Riddles = (function () {
 
     function solve() {
       if (over) return;
-      const ws = p.t.split(" "), ps = p.plain.split(" ");
+      const ws = window.applyNik(p.t, nikOf(game)).split(" "), ps = p.plain.split(" ");
       const idxs = ws.map((w, i) => i).filter(i => ws[i].replace(/[\u0591-\u05C7]/g, "").length >= 3);
       const qs = pick(idxs, Math.min(3, idxs.length)).map(wi => {
         const answer = ws[wi], plain = (ps[wi] || answer).replace(/[\u0591-\u05C7]/g, "");
@@ -694,10 +702,218 @@ window.Riddles = (function () {
     Games.runMC(game, world, qs);
   }
 
+  /* ============ 10. מְצָא אֶת רָשִׁ״י ============
+     כל האפליקציה עד כאן מאמנת זיהוי סימן. הפעולה האמיתית על הדף
+     היא אחרת: לראות מילה בגמרא, לחפש את הדִּבּוּר הַמַּתְחִיל, ולקרוא
+     את הפירוש. הנתונים ישבו כאן כל הזמן — 5 דפי בבא קמא, 89 יחידות,
+     115 פירושים — ואף משימה לא נגעה בהם.
+     בבא קמא אינה מנוקדת. זה לא חוסר; זה הדף. */
+  function findRashi(game, world) {
+    const G = (window.LIBRARY || {}).gemara;
+    if (!G) return sign(game, world);
+    const strip = window.stripNikud;
+    /* פריט תקין = דיבור מתחיל שמופיע ככתבו בתוך הסוגיה שלו */
+    const items = [];
+    G.dapim.forEach(daf => {
+      const dibs = [...new Set(daf.units.flatMap(u => (u.rashi || []).map(r => r.d).filter(Boolean)))];
+      daf.units.forEach(u => {
+        const gm = strip(u.gemara || "");
+        (u.rashi || []).forEach(r => {
+          const d = strip(r.d || "");
+          if (d.length > 2 && gm.indexOf(d) > -1) items.push({ daf, u, r, d, gm, dibs });
+        });
+      });
+    });
+    if (items.length < 4) return sign(game, world);
+
+    const qs = pick(items, Math.min(4, items.length)).map(it => {
+      const others = shuffle(it.dibs.map(strip).filter(x => x !== it.d && x.length > 2)).slice(0, 3);
+      const options = shuffle([{ t: it.d, ok: true }, ...others.map(t => ({ t, ok: false }))]);
+      const marked = it.gm.replace(it.d, '<mark class="dh-mark">' + it.d + "</mark>");
+      return {
+        prompt: (n) => n.appendChild(riddleCard([
+          el("div", { class: "src" }, [it.daf.n + " · בָּבָא קַמָּא", el("span", { class: "nik-tag none" }, ["בְּלִי נִקּוּד"])]),
+          el("div", { class: "sugya", html: marked }),
+          ask("אֵיזֶה דִּבּוּר הַמַּתְחִיל שֶׁל רָשִׁ״י מְפָרֵשׁ אֶת הַמֻּדְגָּשׁ?")
+        ], "tight")),
+        options: options.map(o => ({ node: el("span", { class: "dhopt" }, [rashi(o.t)]), ok: o.ok, t: o.t })),
+        explain: (o) => whyWrongText(o.t, it.d,
+          "הַמִּלָּה הַמֻּדְגֶּשֶׁת בַּגְּמָרָא הִיא " + it.d + ". רָשִׁ״י פּוֹתֵחַ בְּדִיּוּק בָּהּ."),
+        tip: null,
+        onShown: () => {},
+        onResult: (ok) => {
+          State.recordResult("dh:" + it.d, ok, 6);
+          if (ok) UI.modal(el("div", { class: "dh-reveal" }, [
+            el("b", {}, ["רָשִׁ״י"]),
+            el("div", { class: "dh-d" }, [rashi(it.d)]),
+            el("div", { class: "dh-t" }, [rashi(it.r.t)]),
+            el("small", {}, [it.daf.n + " · בָּבָא קַמָּא"])
+          ]));
+        }
+      };
+    });
+    Games.runMC(game, world, qs);
+  }
+
+  /* ============ 11. קְרִיאָה חוֹזֶרֶת · מַד קֶצֶב ============
+     scoreCard מודד שניות שנשארו וניסיונות — לא קצב קריאה. שטף הוא
+     אוטומטיות, ואוטומטיות נמדדת בזמן למילה, לא בציון.
+     אותו קטע שלוש פעמים, וגרף אישי של שניות ל-10 מילים.
+     ⚠️ מול העצמי בלבד. ממצא החוברת: לוח תוצאות תחרותי מוריד
+     מוטיבציה דווקא אצל החלשים. */
+  const RUNS = 3;
+  function pace(game, world) {
+    const list = window.passagesByLevel(game.lvl || 6);
+    const p = list[Math.floor(Math.random() * list.length)];
+    const nik = nikOf(game);
+    const txt = window.applyNik(p.t, nik);
+    const nWords = p.plain.split(/\s+/).filter(Boolean).length;
+    const runs = [];
+    let t0 = 0;
+
+    const per10 = (ms) => Math.round((ms / 1000) * (10 / nWords) * 10) / 10;
+
+    function round(k) {
+      Games.frame(game, world, (body) => {
+        body.appendChild(riddleCard([
+          el("div", { class: "src" }, [p.src, nikTag(game)]),
+          el("div", { class: "pace-round" }, ["קְרִיאָה " + (k + 1) + " מִתּוֹךְ " + RUNS]),
+          el("div", { class: "passage hidden-until" }, [rashi(txt)])
+        ]));
+        const go = el("button", { class: "btn primary big" }, ["הַתְחֵל לִקְרֹא ›"]);
+        const done = el("button", { class: "btn primary big" }, ["סִיַּמְתִּי ✓"]);
+        body.appendChild(go);
+        go.addEventListener("click", () => {
+          body.querySelector(".passage").classList.remove("hidden-until");
+          go.replaceWith(done); t0 = Date.now();
+        });
+        done.addEventListener("click", () => {
+          const secs = per10(Date.now() - t0);
+          runs.push(secs);
+          Audio2.sfx.tap();
+          if (runs.length < RUNS) return round(runs.length);
+          finishPace();
+        });
+        if (k > 0) body.appendChild(el("p", { class: "lead dim" },
+          ["הַקְרִיאָה הַקּוֹדֶמֶת: " + runs[k - 1] + " שְׁנִיּוֹת לְ־10 מִלִּים."]));
+      });
+    }
+
+    function finishPace() {
+      const prog = State.progress;
+      prog.pace = (prog.pace || []).concat([{ d: new Date().toISOString().slice(0, 10), s: Math.min(...runs), src: p.src }]).slice(-20);
+      State.save();
+      const best = Math.min(...runs), first = runs[0];
+      const gained = Math.round((first - best) * 10) / 10;
+      const hist = prog.pace.slice(-8);
+      const worst = Math.max(...hist.map(h => h.s), ...runs);
+      const bar = (v, cls, label) => el("div", { class: "pace-bar " + (cls || "") }, [
+        el("i", { style: "width:" + Math.round(v / worst * 100) + "%" }),
+        el("span", {}, [label + " · " + v + " שׁנ׳"])
+      ]);
+      const card = el("div", { class: "done-card race-done" }, [
+        el("div", { class: "done-emoji" }, [gained > 0 ? "📈" : "📖"]),
+        el("div", { class: "done-title" }, [gained > 0 ? "הִשְׁתַּפַּרְתָּ בְּ־" + gained + " שְׁנִיּוֹת" : "מָדַדְנוּ אֶת הַקֶּצֶב שֶׁלְּךָ"]),
+        el("p", { class: "lead dim" }, ["שְׁנִיּוֹת לְ־10 מִלִּים. מוּל עַצְמְךָ בִּלְבַד."]),
+        el("div", { class: "pace-chart" }, runs.map((v, i) => bar(v, i === runs.indexOf(best) ? "best" : "", "קְרִיאָה " + (i + 1)))),
+        hist.length > 1 ? el("div", { class: "pace-chart past" }, [
+          el("small", {}, ["הַשִּׂיא שֶׁלְּךָ בַּפְּעָמִים הַקּוֹדְמוֹת"]),
+          bar(Math.min(...hist.slice(0, -1).map(h => h.s)), "prev", "עַד הַיּוֹם")
+        ]) : null,
+        el("div", { class: "race-actions" }, [
+          el("button", { class: "btn ghost", onclick: () => pace(game, world) }, ["🔁 שׁוּב"]),
+          el("button", { class: "btn primary", onclick: () => UI.drainRewards(() => App.world(world.id)) }, ["הָלְאָה ›"])
+        ])
+      ]);
+      State.markGameDone(game.id, world.id, 20);
+      State.award(Math.max(0, Math.round(30 - best)), { read: true });
+      UI.burst(); Audio2.sfx.reward();
+      UI.setScreen(el("div", { class: "game center" }, [card]));
+    }
+    round(0);
+  }
+
+  /* ============ 12. חֲזָרָה יוֹמִית ============
+     "מומלץ" בבית הצביע על העולם הראשון שלא הושלם — ואחרי שהכל
+     הושלם, על כלום. כאן שולפים dueChars על פני *כל* סוגי הפריטים:
+     אותיות, ראשי תיבות, מילים ודיבורי מתחיל. תלוי במפתחות הגנריים
+     של א3 — בלעדיהם היה כאן רק אותיות. */
+  function dueItems() {
+    const sr = State.progress.sr || {};
+    const letters = window.LETTERS.map(l => l.c);
+    const abbrs = window.allAbbrev().map(a => "abbr:" + a.f);
+    const seen = Object.keys(sr).filter(k => k.indexOf("word:") === 0 || k.indexOf("dh:") === 0);
+    const pool = [...new Set([...letters, ...abbrs, ...seen])].filter(k => sr[k]);
+    return State.dueChars(pool);
+  }
+  function dailyCount() { return dueItems().length; }
+
+  function due(game, world) {
+    const keys = dueItems().slice(0, 8);
+    if (!keys.length) {
+      return Games.frame(game, world, (body) => {
+        body.appendChild(riddleCard([
+          el("div", { class: "big-letter" }, ["✓"]),
+          ask("אֵין מָה לַחֲזֹר הַיּוֹם."),
+          el("p", { class: "lead dim" }, ["כָּל מָה שֶׁלָּמַדְתָּ עֲדַיִן טָרִי. חֲזֹר מָחָר, אוֹ הַמְשֵׁךְ בַּמַּסָּע."])
+        ]));
+        body.appendChild(el("button", { class: "btn primary big", onclick: () => App.go("home") }, ["לַמַּסָּע ›"]));
+      });
+    }
+    const abbrByKey = window.allAbbrev().reduce((m, a) => (m["abbr:" + a.f] = a, m), {});
+    const qs = keys.map(k => {
+      if (window.LETTER_BY_CHAR[k]) {              // אות
+        const fam = window.familyOf(k);
+        const pool = fam ? fam.chars : window.LETTERS.map(l => l.c);
+        const distract = shuffle(pool.filter(x => x !== k)).slice(0, 3);
+        const options = shuffle([{ c: k, ok: true }, ...distract.map(c => ({ c, ok: false }))]);
+        return {
+          prompt: (n) => n.appendChild(riddleCard([
+            el("div", { class: "due-kind" }, ["אוֹת"]),
+            el("div", { class: "big-letter" }, [rashi(k)]), hint(k)], "tight")),
+          options: options.map(o => ({ node: el("span", { class: "name" }, [NAME(o.c)]), ok: o.ok, c: o.c })),
+          explain: (o) => whyWrong(o.c, k),
+          onShown: () => Audio2.speak(NAME(k)),
+          onResult: (ok) => State.recordResult(k, ok)
+        };
+      }
+      if (abbrByKey[k]) {                          // ראשי תיבות
+        const a = abbrByKey[k];
+        const distract = pick(window.allAbbrev().filter(x => x.e !== a.e), 3);
+        const options = shuffle([{ a, ok: true }, ...distract.map(x => ({ a: x, ok: false }))]);
+        return {
+          prompt: (n) => n.appendChild(riddleCard([
+            el("div", { class: "due-kind" }, ["קִצּוּר"]),
+            el("div", { class: "abbr-big" }, [rashi(a.f)])], "tight")),
+          options: options.map(o => ({ node: el("span", { class: "name" }, [o.a.e]), ok: o.ok, a: o.a })),
+          explain: (o) => whyWrongText(o.a.f, a.f, o.a.f + " = " + o.a.e + ". " + a.f + " = " + a.e + "."),
+          onResult: (ok) => State.recordResult(k, ok, 4)
+        };
+      }
+      // מילה / דיבור המתחיל — קוראים את הגליף ובוחרים את המרובע
+      const txt = k.slice(k.indexOf(":") + 1);
+      const twins = twinVariants(txt, 3, [txt]);
+      const options = shuffle([{ t: txt, ok: true }, ...twins.map(t => ({ t, ok: false }))]);
+      return {
+        prompt: (n) => n.appendChild(riddleCard([
+          el("div", { class: "due-kind" }, [k.indexOf("dh:") === 0 ? "דִּבּוּר הַמַּתְחִיל" : "מִלָּה"]),
+          el("div", { class: "big-word" }, [rashi(txt)]), ask("אֵיזוֹ מִלָּה זֹאת?")], "tight")),
+        options: options.map(o => ({ node: el("span", { class: "sqword" }, [square(o.t)]), ok: o.ok, t: o.t })),
+        explain: (o) => {
+          const d = diffLetter(o.t, txt);
+          return whyWrongText(o.t, txt, d ? "אוֹת אַחַת: " + NAME(d[0]) + " בִּמְקוֹם " + NAME(d[1]) + "." : null);
+        },
+        onShown: () => Audio2.speak(txt),
+        onResult: (ok) => State.recordResult(k, ok, 4)
+      };
+    });
+    Games.runMC(game, world, qs);
+  }
+
   const TYPES = {
     "r-open": open, "r-sign": sign, "r-family": family, "r-detective": detective,
     "r-word": word, "r-readword": readword, "r-line": line, "r-fluent": fluent,
-    "r-grid": grid, "r-star": star, "r-abbr": abbrev
+    "r-grid": grid, "r-star": star, "r-abbr": abbrev, "r-find": findRashi, "r-pace": pace, "r-due": due
   };
-  return { play: (g, w) => (TYPES[g.type] || sign)(g, w), TYPES, whyWrong, pairHint, whyWrongText };
+  return { play: (g, w) => (TYPES[g.type] || sign)(g, w), TYPES, whyWrong, pairHint, whyWrongText, dailyCount };
 })();

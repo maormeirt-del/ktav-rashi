@@ -679,3 +679,63 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .bonus-sec { margin-top: 22px; }
 .game-card.bonus { border-color: var(--gold); }
 .game-card.bonus.locked { opacity: .55; filter: grayscale(.6); }
+
+
+/* ===========================================================
+   מִתְקַדֵּם: סֻלַּם נִקּוּד · מְצָא אֶת רָשִׁ״י · מַד קֶצֶב ·
+   חֲזָרָה יוֹמִית · חֲשִׂיפָה לְפִי מִלָּה
+   =========================================================== */
+
+/* --- דרגת הניקוד כתובה על המסך, כי היא חלק מהמשימה --- */
+.nik-tag { display: inline-block; margin-inline-start: 8px; padding: 2px 8px; border-radius: 99px;
+  font-family: var(--font-display); font-size: .66rem; font-weight: 700; vertical-align: middle; }
+.nik-tag.part { background: hsla(45,80%,50%,.2); color: #8a6a10; }
+.nik-tag.none { background: hsla(20,70%,50%,.16); color: #a1461a; }
+
+/* --- מְצָא אֶת רָשִׁ״י: סוגיה במרובע, דיבורי מתחיל בכתב רש״י --- */
+.sugya { font-family: var(--font-sans); font-size: 1.06rem; line-height: 1.95; font-weight: 500;
+  padding: 6px 2px; text-align: justify; }
+.dh-mark { background: hsla(45,90%,55%,.42); border-radius: 5px; padding: 1px 3px; font-weight: 700; }
+.dhopt { font-family: "Rashi", serif; font-size: 1.5rem; line-height: 1.5; }
+.dh-reveal { text-align: center; }
+.dh-reveal b { font-family: var(--font-display); font-size: .78rem; color: var(--muted); }
+.dh-d { font-family: "Rashi", serif; font-size: 1.9rem; margin: 6px 0 10px; color: var(--accent); }
+.dh-t { font-family: "Rashi", serif; font-size: 1.3rem; line-height: 2; text-align: justify; }
+.dh-reveal small { display: block; margin-top: 12px; color: var(--muted); font-size: .74rem; }
+
+/* --- מד קצב: מול העצמי בלבד, בלי לוח תוצאות --- */
+.pace-round { font-family: var(--font-display); font-size: .82rem; color: var(--muted); text-align: center; }
+.passage.hidden-until { filter: blur(9px); opacity: .5; user-select: none; }
+.pace-chart { display: flex; flex-direction: column; gap: 7px; margin: 14px 0; }
+.pace-chart.past { margin-top: 4px; opacity: .8; }
+.pace-chart small { font-size: .72rem; color: var(--muted); font-family: var(--font-display); }
+.pace-bar { position: relative; background: var(--line); border-radius: 8px; height: 30px; overflow: hidden; }
+.pace-bar i { position: absolute; inset-block: 0; inset-inline-start: 0; background: hsla(200,55%,55%,.45);
+  border-radius: 8px; }
+.pace-bar.best i { background: hsla(150,55%,45%,.5); }
+.pace-bar.prev i { background: hsla(0,0%,50%,.3); }
+.pace-bar span { position: relative; display: block; line-height: 30px; padding-inline: 10px;
+  font-size: .8rem; font-weight: 700; }
+
+/* --- חזרה יומית --- */
+.duelink { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px;
+  align-items: center; background: hsla(150,45%,45%,.12); border: 1.5px solid hsla(150,45%,45%,.35);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
+  font: inherit; color: var(--ink); text-align: start; }
+.duelink span { grid-row: 1 / 3; font-size: 1.5rem; }
+.duelink b { font-family: var(--font-display); font-size: .98rem; }
+.duelink small { color: var(--muted); font-size: .76rem; }
+.duelink i { grid-row: 1 / 3; font-style: normal; color: var(--muted); font-size: 1.3rem; }
+.due-kind { font-family: var(--font-display); font-size: .68rem; color: var(--muted);
+  letter-spacing: .02em; margin-bottom: 4px; }
+
+/* --- בית המדרש: חשיפה לפי מילה, ומונה כן --- */
+.rw { cursor: pointer; border-radius: 4px; padding: 0 1px; }
+.rw:active { background: hsla(45,90%,55%,.3); }
+.rw.shown { font-family: var(--font-sans); font-size: .82em; font-weight: 500;
+  background: hsla(45,90%,55%,.22); }
+.daf-page .daf-tools { display: block; text-align: center; }
+.read-meter { display: flex; gap: 10px; align-items: baseline; justify-content: center; flex-wrap: wrap; }
+.read-meter b { font-family: var(--font-display); font-size: .86rem; }
+.read-meter span { font-size: .78rem; color: var(--muted); }
+.tap-note { display: block; width: 100%; margin-top: 3px; font-size: .72rem; color: var(--muted); }
