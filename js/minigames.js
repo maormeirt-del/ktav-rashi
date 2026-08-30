@@ -37,17 +37,24 @@ window.GameHall = (function () {
   }
 
   /* ---------------- אולם ---------------- */
-  /* ד2 — שני מדורים, ואף אחד מהם אינו תגמול:
-     תרגול (זיכרון רש״י↔מרובע) והפסקה (השאר). הכל פתוח מההתחלה,
-     והנקודות מכאן אינן נקודות קריאה. */
+  /* שני מדורים: תרגול (זיכרון רש״י↔מרובע, פתוח תמיד) והפסקה (השאר).
+     ההפסקה נפתחת בהדרגה לפי ✦ — לא כי היא פרס על לימוד, אלא כדי
+     שיהיה מה לצפות לו. הנקודות מכאן עדיין אינן נקודות קריאה,
+     ולכן שחמט לא מקרב אף אחד לדף גמרא. */
   function hall() {
+    const pts = State.progress.points;
     const body = el("div", { class: "hallscr" });
     const card = (g) => {
-      const c = el("button", { class: "hgame", onclick: () => intro(g) }, [
-        el("span", { class: "hg-emoji" }, [g.emoji]),
+      const open = pts >= (g.unlock || 0);
+      const c = el("button", { class: "hgame" + (open ? "" : " locked"),
+        onclick: () => open ? intro(g)
+          : UI.toast(`נִפְתָּח בְּ-${g.unlock} נְקֻדּוֹת (חָסֵר ${g.unlock - pts})`) }, [
+        el("span", { class: "hg-emoji" }, [open ? g.emoji : "🔒"]),
         el("span", { class: "hg-name" }, [g.name]),
-        el("span", { class: "hg-tag" }, ["שַׂחֵק ›"])
+        el("span", { class: "hg-tag" }, [open ? "שַׂחֵק ›" : `${g.unlock} נק׳`])
       ]);
+      if (!open) c.appendChild(el("span", { class: "hg-bar" }, [
+        el("i", { style: `width:${Math.round(Math.min(1, pts / g.unlock) * 100)}%` })]));
       return c;
     };
     const rashiGames = window.GAMEHALL.filter(g => g.kind === "rashi");
@@ -59,7 +66,7 @@ window.GameHall = (function () {
     body.appendChild(el("div", { class: "hall-grid" }, rashiGames.map(card)));
 
     body.appendChild(el("h3", { class: "sec" }, ["הַפְסָקָה"]));
-    body.appendChild(el("p", { class: "sub-lead" }, ["מִשְׂחֲקֵי חֲשִׁיבָה שֶׁאֵין לָהֶם קֶשֶׁר לִכְתָב רָשִׁ״י. פְּתוּחִים תָּמִיד — הֵם לֹא פְּרָס, וְהַנְּקֻדּוֹת מִכָּאן לֹא פּוֹתְחוֹת סְפָרִים. הַהֶסְבֵּרִים בִּכְתָב רָשִׁ״י."]));
+    body.appendChild(el("p", { class: "sub-lead" }, ["מִשְׂחֲקֵי חֲשִׁיבָה שֶׁאֵין לָהֶם קֶשֶׁר לִכְתָב רָשִׁ״י. נִפְתָּחִים לְפִי ✦ נְקֻדּוֹת. הַנְּקֻדּוֹת מִכָּאן לֹא פּוֹתְחוֹת סְפָרִים. הַהֶסְבֵּרִים בִּכְתָב רָשִׁ״י."]));
     body.appendChild(el("div", { class: "hall-grid" }, breakGames.map(card)));
 
     UI.setScreen(el("div", { class: "page" }, [body, UI.nav("games")]));
