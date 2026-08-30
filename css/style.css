@@ -797,13 +797,13 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
    שם הרקע שמיים עם שמש ועננים; כאן אותו מבנה בשפת הקלף והנייבי,
    כי הלומד הוא נער בן 15 ולא ילד בן שש.
    =========================================================== */
-.adventure { position: relative; margin: 8px 0 4px; border-radius: 26px; overflow: hidden;
-  background: linear-gradient(180deg, hsla(42,60%,92%,.9) 0%, var(--card) 45%, hsla(35,55%,90%,.85) 100%);
-  box-shadow: inset 0 2px 14px rgba(120,100,60,.10), var(--shadow); }
+.adventure { position: relative; margin: 8px 0 4px; border-radius: 28px; overflow: hidden;
+  background: linear-gradient(180deg, #eaf4ff 0%, #fef6e6 42%, #eafbe9 100%);
+  box-shadow: inset 0 2px 14px rgba(120,120,160,.10), var(--shadow); }
 .path-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .path-glow { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; opacity: .7; }
-.path-line { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round;
-  stroke-dasharray: .4 5; opacity: .9; }
+.path-line { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round;
+  stroke-dasharray: .5 4.5; opacity: .95; }
 
 .node { position: absolute; transform: translate(-50%,-50%); display: flex;
   flex-direction: column; align-items: center; width: 108px;
@@ -840,3 +840,28 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .daily > div:first-child { flex: 1 1 auto; min-width: 0; }
 .daily > div:first-child b { white-space: nowrap; }
 .daily .btn.sm { width: auto; flex: 0 0 auto; padding: 9px 16px; white-space: nowrap; }
+
+
+/* אווירת המפה — שמש, עננים וכוכבים, כמו ב"אותיות של אור" */
+.amb { position: absolute; pointer-events: none; opacity: .85; z-index: 0; }
+.amb-sun  { top: 12px; inset-inline-start: 16px; font-size: 34px; animation: bob 5s ease-in-out infinite; }
+.amb-c1   { top: 64px; inset-inline-end: 20px; font-size: 30px; opacity: .7; animation: bob 6s ease-in-out infinite; }
+.amb-c2   { top: 46%; inset-inline-start: 12px; font-size: 26px; opacity: .6; animation: bob 7s ease-in-out infinite; }
+.amb-s1   { top: 30%; inset-inline-end: 12%; font-size: 20px; animation: tw 3s ease-in-out infinite; }
+.amb-s2   { top: 72%; inset-inline-end: 16%; font-size: 17px; animation: tw 4s ease-in-out infinite; }
+.amb-tree { bottom: 10px; inset-inline-start: 14px; font-size: 34px; opacity: .8; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes tw  { 0%,100% { opacity: .4; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) {
+  .amb, .node.rec .node-ring { animation: none; }
+}
+/* תחנות גדולות יותר, טבעת לבנה עבה — הקהל הוא ז׳–ח׳ */
+.node { width: 122px; }
+.node-ring { width: 76px; height: 76px; }
+.node-ico { width: 76px; height: 76px; font-size: 32px; }
+.ring-bg { stroke-width: 6; }
+.ring-fg { stroke-width: 6; }
+.node-label { font-size: 14px; margin-top: 8px;
+  text-shadow: 0 1px 2px rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.7); }
+.map-sub { text-align: center; font-family: var(--font-display); font-weight: 700;
+  font-size: .92rem; color: var(--accent); margin: 2px 0 8px; }

@@ -274,7 +274,7 @@ window.App = (function () {
   function adventureMap() {
     const worlds = window.WORLDS, n = worlds.length;
     const firstUndone = worlds.find(w => !State.progress.worldsDone[w.id]);
-    const top0 = 62, gap = 118, H = top0 + (n - 1) * gap + 78;
+    const top0 = 78, gap = 148, H = top0 + (n - 1) * gap + 88;
     const xs = i => (i % 2 === 0 ? 26 : 74);
     const ys = i => top0 + i * gap;
     let d = "M " + xs(0) + " " + ys(0);
@@ -283,7 +283,12 @@ window.App = (function () {
       d += " C " + xs(i - 1) + " " + cy + ", " + xs(i) + " " + cy + ", " + xs(i) + " " + ys(i);
     }
     const wrap = el("div", { class: "adventure", style: "height:" + H + "px" });
+    /* אווירה — בדיוק כמו ב"אותיות של אור". הקהל הוא ז׳–ח׳,
+       והמפה צריכה להיראות כמו מקום שכיף להיות בו. */
     wrap.innerHTML =
+      '<span class="amb amb-sun">🌞</span><span class="amb amb-c1">☁️</span>' +
+      '<span class="amb amb-c2">☁️</span><span class="amb amb-s1">⭐</span>' +
+      '<span class="amb amb-s2">✨</span><span class="amb amb-tree">🌳</span>' +
       '<svg class="path-svg" viewBox="0 0 100 ' + H + '" preserveAspectRatio="none">' +
       '<path d="' + d + '" class="path-glow"/><path d="' + d + '" class="path-line"/></svg>';
 
@@ -346,6 +351,7 @@ window.App = (function () {
     ]));
 
     body.appendChild(el("h2", { class: "map-title" }, ["מַסַּע הַפִּעֲנוּחַ"]));
+    body.appendChild(el("p", { class: "map-sub" }, ["כָּל הַשְּׁלַבִּים פְּתוּחִים — בְּחַר לְאָן לִקְפֹּץ!"]));
     body.appendChild(adventureMap());
     UI.page("home", body);
     drain();
