@@ -277,37 +277,51 @@ window.App = (function () {
      ספרים** מהרצפה לתקרה, עם מסגרות עץ בהיר. נבנה ב-SVG ולא
      כתמונה: נשאר חד בכל מסך, שוקל כלום, ואין שאלת רישוי. */
   function beitMidrashBg() {
-    /* פלטת שדרות אמיתית: חום כהה, בורדו, קרם, זהב וירוק-בקבוק —
-       כמו קיר ספרי קודש. אחיד מדי נראה כמו לבנים, לא כמו ספרים. */
-    const SPINE = ["#5a3a1e", "#7a4a22", "#3e2c18", "#96632c", "#6b2f22",
-                   "#84572c", "#4a2f1a", "#a87a3e", "#59401f", "#7d4526",
-                   "#cdb083", "#33402c", "#6b3a20", "#8f7040"];
-    const BAYS = 3, ROWS = 5;
-    const bayW = 200 / BAYS, boardH = 3.2;
-    let g = "";
+    /* קיר בית מדרש בנוי מ**סטים**, לא מספרים אקראיים: רצף כרכים
+       זהים (ש״ס, רמב״ם, שו״ע), כל אחד בעור אחד עם חבקי זהב ולוחית
+       שם. ספרים בצבע אקראי נראים כמו ספריית עירייה, לא כמו קיר
+       ספרי קודש — וזה בדיוק מה שהיה כאן קודם. */
+    const SETS = [
+      { c: "#5c1f1f", g: "#d9b45c" },   // בורדו כהה — ש״ס
+      { c: "#3d2a17", g: "#cfa74e" },   // חום עמוק
+      { c: "#1f3040", g: "#c9a44f" },   // נייבי
+      { c: "#26402c", g: "#c7a352" },  // ירוק בקבוק
+      { c: "#6b4a1f", g: "#e0c078" }   // חום-דבש
+    ];
+    const BAYS = 3, ROWS = 5, bayW = 200 / BAYS, boardH = 3.2;
+    let g = "", seed = 7;
+    /* ⚠️ הביטים הנמוכים ב-LCG כמעט קבועים: הגרסה הקודמת החזירה
+       198 פעמים מתוך 200 את אותו סט, וכל הקיר יצא בורדו. לוקחים
+       את הביטים הגבוהים במקום את השארית. */
+    const rnd = (n) => { seed = (seed * 1664525 + 1013904223) >>> 0;
+                         return Math.floor((seed / 4294967296) * n); };
+
     for (let b = 0; b < BAYS; b++) {
       const x0 = b * bayW;
-      /* מסגרת עץ אנכית בין הארונות */
       g += '<rect x="' + (x0 - 1.6) + '" y="0" width="3.2" height="120" fill="#c8a469" opacity=".9"/>';
       for (let r = 0; r < ROWS; r++) {
         const yTop = 6 + r * 22.4, shelfH = 22.4 - boardH;
         let x = x0 + 2.4;
-        let i = 0;
         while (x < x0 + bayW - 4) {
-          /* רוחב וגובה משתנים — ספרים אמיתיים אינם אחידים */
-          const w = 2.6 + ((b * 7 + r * 5 + i * 3) % 5) * 0.9;
-          const h = shelfH - 1.2 - ((i * 3 + r) % 4) * 0.7;
+          const set = SETS[rnd(SETS.length)];
+          const runMax = Math.floor((x0 + bayW - 4 - x) / 3.4);
+          if (runMax < 1) break;
+          const run = Math.min(runMax, 3 + rnd(7));       // סט של 3 עד 9 כרכים
+          const w = 2.9 + rnd(3) * 0.5;                    // כרכי סט — רוחב אחיד
+          const h = shelfH - 1 - rnd(3) * 0.6;             // וגובה אחיד
           const y = yTop + (shelfH - h);
-          const c = SPINE[(i + r * 3 + b) % SPINE.length];
-          g += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
-               '" height="' + h.toFixed(1) + '" rx=".5" fill="' + c + '"/>';
-          /* חבק זהב על השדרה */
-          if (i % 2 === 0)
-            g += '<rect x="' + (x + 0.5).toFixed(1) + '" y="' + (y + h * 0.28).toFixed(1) +
-                 '" width="' + (w - 1).toFixed(1) + '" height=".7" fill="#e8cf9a" opacity=".7"/>';
-          x += w + 0.55; i++;
+          for (let k = 0; k < run && x < x0 + bayW - 4; k++) {
+            g += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
+                 '" height="' + h.toFixed(1) + '" rx=".4" fill="' + set.c + '"/>';
+            /* חבק עליון, לוחית שם, חבק תחתון — הסימן המזהה של ספר קודש */
+            const gx = (x + 0.45).toFixed(1), gw = (w - 0.9).toFixed(1);
+            g += '<rect x="' + gx + '" y="' + (y + h * 0.14).toFixed(1) + '" width="' + gw + '" height=".55" fill="' + set.g + '"/>';
+            g += '<rect x="' + gx + '" y="' + (y + h * 0.30).toFixed(1) + '" width="' + gw + '" height="' + (h * 0.17).toFixed(1) + '" fill="' + set.g + '" opacity=".82"/>';
+            g += '<rect x="' + gx + '" y="' + (y + h * 0.78).toFixed(1) + '" width="' + gw + '" height=".55" fill="' + set.g + '"/>';
+            x += w + 0.42;
+          }
+          x += 0.7;                                        // רווח קטן בין סטים
         }
-        /* מדף */
         g += '<rect x="' + x0 + '" y="' + (yTop + shelfH).toFixed(1) + '" width="' + bayW +
              '" height="' + boardH + '" rx=".6" fill="#b98f52"/>';
       }
@@ -318,7 +332,6 @@ window.App = (function () {
         '<stop offset="0" stop-color="#fdf6e6" stop-opacity=".10"/>' +
         '<stop offset="1" stop-color="#f2e3c4" stop-opacity=".18"/></linearGradient></defs>' +
       '<g opacity="1">' + g + '</g>' +
-      /* שכבת ריכוך — הרקע חייב להישאר רקע, אחרת התחנות נבלעות בו */
       '<rect width="200" height="120" fill="url(#bmFade)"/>' +
     '</svg>';
   }
