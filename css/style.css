@@ -790,3 +790,53 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .mic-blocked ol { margin: 0 18px 10px 0; font-size: .87rem; font-weight: 500; }
 .mic-blocked li { margin-bottom: 6px; line-height: 1.6; }
 .btn.sm { padding: 9px 14px; font-size: .9rem; width: 100%; }
+
+
+/* ===========================================================
+   מַפַּת הַמַּסָּע — נתיב מתפתל, בדגם של "אותיות של אור".
+   שם הרקע שמיים עם שמש ועננים; כאן אותו מבנה בשפת הקלף והנייבי,
+   כי הלומד הוא נער בן 15 ולא ילד בן שש.
+   =========================================================== */
+.adventure { position: relative; margin: 8px 0 4px; border-radius: 26px; overflow: hidden;
+  background: linear-gradient(180deg, hsla(42,60%,92%,.9) 0%, var(--card) 45%, hsla(35,55%,90%,.85) 100%);
+  box-shadow: inset 0 2px 14px rgba(120,100,60,.10), var(--shadow); }
+.path-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.path-glow { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; opacity: .7; }
+.path-line { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round;
+  stroke-dasharray: .4 5; opacity: .9; }
+
+.node { position: absolute; transform: translate(-50%,-50%); display: flex;
+  flex-direction: column; align-items: center; width: 108px;
+  border: 0; background: none; padding: 0; cursor: pointer; }
+.node:active { transform: translate(-50%,-50%) scale(.94); }
+.node-ring { width: 66px; height: 66px; border-radius: 50%; box-shadow: var(--shadow); }
+.ring-bg { fill: var(--card); stroke: var(--line); stroke-width: 5; }
+.ring-fg { fill: none; stroke: hsl(var(--hue,35) 70% 45%); stroke-width: 5; stroke-linecap: round;
+  transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset .6s; }
+.node-ico { position: absolute; top: 0; width: 66px; height: 66px; display: flex;
+  align-items: center; justify-content: center; font-size: 28px; pointer-events: none; }
+.node.done .ring-bg { fill: #e9f9ef; }
+.node-check { position: absolute; top: -4px; inset-inline-start: -4px; background: #2fa463; color: #fff;
+  border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center;
+  justify-content: center; font-size: 14px; font-weight: 700; }
+.node-label { font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  color: var(--ink); margin-top: 7px; line-height: 1.2; text-align: center; }
+.node.rec .node-ring { animation: nodePulse 1.4s infinite; }
+@keyframes nodePulse {
+  0%,100% { box-shadow: 0 0 0 0 hsla(35,90%,55%,.55); }
+  50%     { box-shadow: 0 0 0 11px hsla(35,90%,55%,0); }
+}
+.node-badge { position: absolute; top: -19px; background: var(--accent); color: #fff;
+  font-family: var(--font-display); font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 9px; white-space: nowrap; }
+
+/* הכותרת ושורת הדרגה נדרסו על הכרטיס הראשון — הטופבר לא הזמין מקום */
+.page > .topbar { position: relative; z-index: 5; }
+.home { padding-top: 4px; }
+.map-title { margin-top: 18px; }
+
+/* כרטיס הרצף נמעך: .btn.sm קיבל width:100% מכלל ההקלטה, בלע את
+   הרוחב, והטקסט נדחס לטור בן מילה. הכפתור כאן לא נמתח. */
+.daily > div:first-child { flex: 1 1 auto; min-width: 0; }
+.daily > div:first-child b { white-space: nowrap; }
+.daily .btn.sm { width: auto; flex: 0 0 auto; padding: 9px 16px; white-space: nowrap; }

@@ -266,6 +266,53 @@ window.App = (function () {
     Riddles.play({ id: "due-" + day, type: "r-due", title: "חֲזָרָה יוֹמִית", emoji: "🔁", tries: 3, limit: 90 }, world);
   }
 
+
+  /* --- מַפַּת הַמַּסָּע: נתיב מתפתל עם טבעות התקדמות ---
+     נשען על buildAdventureMap ב-reading-app. שם הרקע הוא שמיים
+     עם שמש ועננים; כאן הקהל הוא נער בן 15, ולכן אותו מבנה בדיוק
+     אבל בשפת הצבע של האפליקציה — קלף ונייבי, בלי ציורי ילדים. */
+  function adventureMap() {
+    const worlds = window.WORLDS, n = worlds.length;
+    const firstUndone = worlds.find(w => !State.progress.worldsDone[w.id]);
+    const top0 = 62, gap = 118, H = top0 + (n - 1) * gap + 78;
+    const xs = i => (i % 2 === 0 ? 26 : 74);
+    const ys = i => top0 + i * gap;
+    let d = "M " + xs(0) + " " + ys(0);
+    for (let i = 1; i < n; i++) {
+      const cy = (ys(i - 1) + ys(i)) / 2;
+      d += " C " + xs(i - 1) + " " + cy + ", " + xs(i) + " " + cy + ", " + xs(i) + " " + ys(i);
+    }
+    const wrap = el("div", { class: "adventure", style: "height:" + H + "px" });
+    wrap.innerHTML =
+      '<svg class="path-svg" viewBox="0 0 100 ' + H + '" preserveAspectRatio="none">' +
+      '<path d="' + d + '" class="path-glow"/><path d="' + d + '" class="path-line"/></svg>';
+
+    worlds.forEach((w, i) => {
+      const tasks = w.games.filter(g => !g.bonus);
+      const doneN = tasks.filter(g => State.isDone(g.id)).length;
+      const pct = tasks.length ? Math.round(doneN / tasks.length * 100) : 0;
+      const done = !!State.progress.worldsDone[w.id];
+      const rec = firstUndone && firstUndone.id === w.id;
+      const r = 27, circ = 2 * Math.PI * r, off = circ * (1 - pct / 100);
+      const node = el("button", {
+        class: "node" + (rec ? " rec" : "") + (done ? " done" : ""),
+        style: "left:" + xs(i) + "%;top:" + ys(i) + "px;--hue:" + w.hue,
+        onclick: () => world(w.id)
+      });
+      node.innerHTML =
+        '<svg class="node-ring" viewBox="0 0 64 64">' +
+        '<circle cx="32" cy="32" r="' + r + '" class="ring-bg"/>' +
+        '<circle cx="32" cy="32" r="' + r + '" class="ring-fg" stroke-dasharray="' + circ +
+        '" stroke-dashoffset="' + off + '"/></svg>' +
+        '<span class="node-ico">' + w.emoji + '</span>' +
+        (done ? '<span class="node-check">✓</span>' : '') +
+        (rec ? '<span class="node-badge">אַתָּה כָּאן</span>' : '') +
+        '<span class="node-label">' + w.title + '</span>';
+      wrap.appendChild(node);
+    });
+    return wrap;
+  }
+
   function home() {
     const body = el("div", { class: "home" });
     /* ד5 — רצף ואתגר יומי היו שתי מערכות תגמול נפרדות על אותו מסך.
@@ -299,26 +346,7 @@ window.App = (function () {
     ]));
 
     body.appendChild(el("h2", { class: "map-title" }, ["מַסַּע הַפִּעֲנוּחַ"]));
-    const path = el("div", { class: "path" });
-    const firstUndone = window.WORLDS.find(w => !State.progress.worldsDone[w.id]);
-    window.WORLDS.forEach((w, i) => {
-      const tasks = w.games.filter(g => !g.bonus);
-      const doneCount = tasks.filter(g => State.isDone(g.id)).length;
-      const complete = !!State.progress.worldsDone[w.id];
-      const recommended = firstUndone && firstUndone.id === w.id;
-      const node = el("button", { class: "world-node" + (complete ? " done" : "") + (recommended ? " rec" : ""), style: `--hue:${w.hue}`, onclick: () => world(w.id) }, [
-        el("div", { class: "wn-emoji" }, [complete ? "✓" : w.emoji]),
-        el("div", { class: "wn-info" }, [
-          el("b", {}, [w.title]),
-          el("small", {}, [w.sub]),
-          el("div", { class: "wn-prog" }, [el("i", { style: `width:${Math.round(doneCount / Math.max(1, tasks.length) * 100)}%` })])
-        ]),
-        recommended ? el("span", { class: "rec-tag" }, ["מֻמְלָץ"]) : null
-      ]);
-      path.appendChild(node);
-      if (i < window.WORLDS.length - 1) path.appendChild(el("div", { class: "path-link" }));
-    });
-    body.appendChild(path);
+    body.appendChild(adventureMap());
     UI.page("home", body);
     drain();
   }
