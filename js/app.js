@@ -271,6 +271,46 @@ window.App = (function () {
      נשען על buildAdventureMap ב-reading-app. שם הרקע הוא שמיים
      עם שמש ועננים; כאן הקהל הוא נער בן 15, ולכן אותו מבנה בדיוק
      אבל בשפת הצבע של האפליקציה — קלף ונייבי, בלי ציורי ילדים. */
+
+  /* --- רֶקַע בֵּית מִדְרָשׁ --- */
+  function beitMidrashBg() {
+    /* מדף ספרים: רוחב וגובה משתנים כדי שלא ייראה כמו גדר */
+    const W = [13,9,11,8,14,10,12,9,13,11,8,12,10,14,9,11];
+    let books = "", x = 2;
+    W.forEach((w, i) => {
+      const h = 30 + (i * 7) % 16, y = 74 - h;
+      const tone = ["#8a6a3a", "#6d5228", "#a3814a", "#5c4a2e", "#96794b"][i % 5];
+      books += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h +
+               '" rx="1.6" fill="' + tone + '"/>' +
+               '<rect x="' + (x + 1.6) + '" y="' + (y + 5) + '" width="' + (w - 3.2) +
+               '" height="1.4" fill="#d9c08a" opacity=".55"/>';
+      x += w + 1.6;
+    });
+    return '' +
+    '<svg class="bm-bg" viewBox="0 0 200 120" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
+      '<defs>' +
+        '<radialGradient id="bmLamp" cx="50%" cy="8%" r="42%">' +
+          '<stop offset="0" stop-color="#ffe9b0" stop-opacity=".85"/>' +
+          '<stop offset="1" stop-color="#ffe9b0" stop-opacity="0"/></radialGradient>' +
+      '</defs>' +
+      '<rect width="200" height="120" fill="url(#bmLamp)"/>' +
+      /* שלוש קשתות — חלונות בית המדרש */
+      '<g fill="none" stroke="#b58a2e" stroke-width="1.1" opacity=".26">' +
+        '<path d="M42 74 V40 a18 18 0 0 1 36 0 V74"/>' +
+        '<path d="M82 74 V32 a18 18 0 0 1 36 0 V74"/>' +
+        '<path d="M122 74 V40 a18 18 0 0 1 36 0 V74"/>' +
+      '</g>' +
+      '<g opacity=".2">' +
+        '<line x1="100" y1="0" x2="100" y2="16" stroke="#8a6a3a" stroke-width="1"/>' +
+        '<circle cx="100" cy="19" r="4.2" fill="#f0b429"/>' +
+      '</g>' +
+    '</svg>' +
+    '<svg class="bm-shelf" viewBox="0 0 200 80" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
+      '<g opacity=".3">' + books + '</g>' +
+      '<rect x="0" y="74" width="200" height="6" rx="1.5" fill="#7a5c30" opacity=".38"/>' +
+    '</svg>';
+  }
+
   function adventureMap() {
     const worlds = window.WORLDS, n = worlds.length;
     const firstUndone = worlds.find(w => !State.progress.worldsDone[w.id]);
@@ -283,9 +323,10 @@ window.App = (function () {
       d += " C " + xs(i - 1) + " " + cy + ", " + xs(i) + " " + cy + ", " + xs(i) + " " + ys(i);
     }
     const wrap = el("div", { class: "adventure", style: "height:" + H + "px" });
-    /* רק הרקע נלקח מ"אותיות של אור". השמש, העננים, הכוכבים והעץ
-       הוסרו לבקשת מאור — הרקע המדורג לבדו נותן את התחושה. */
-    wrap.innerHTML =
+    /* רקע בית מדרש, ב-SVG ולא בתמונה: נשאר חד בכל מסך, שוקל כלום,
+       ומשתנה עם הפלטה. שלוש קשתות ארון-קודש למעלה, מדף ספרים
+       למטה, ונר תלוי באמצע. הכל בשקיפות נמוכה — המפה היא הגיבור. */
+    wrap.innerHTML = beitMidrashBg() +
       '<svg class="path-svg" viewBox="0 0 100 ' + H + '" preserveAspectRatio="none">' +
       '<path d="' + d + '" class="path-glow"/><path d="' + d + '" class="path-line"/></svg>';
 
