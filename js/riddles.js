@@ -513,65 +513,72 @@ window.Riddles = (function () {
   function recordBlock(passage, onDone) {
     const words = passage.plain.trim().split(/\s+/).length;
     const wrap = el("div", { class: "rec-wrap" });
-    let rec = null, stream = null, chunks = [], url = null, t0 = 0, tick = null;
+    const box = el("div", { class: "rec-box" });
+    const play = el("div", { class: "rec-play" });
+    const btn = el("button", { class: "btn primary big" }, ["🔴 הַתְחֵל הַקְלָטָה"]);
+    const skip = el("button", { class: "btn ghost", onclick: () => finishUp(null) }, ["דַּלֵּג ←"]);
+    box.appendChild(btn); box.appendChild(play);
+    wrap.appendChild(box); wrap.appendChild(skip);
 
-    const btn = el("button", { class: "btn primary big rec-btn" }, ["🎙️ הַקְלֵט אֶת הַקְּרִיאָה"]);
-    const timer = el("div", { class: "rec-time" });
-    const out = el("div", { class: "rec-out" });
-    wrap.appendChild(btn); wrap.appendChild(timer); wrap.appendChild(out);
+    let rec = null, stream = null, chunks = [], url = null, t0 = 0, recording = false;
 
-    /* אין מיקרופון או אין תמיכה — חוזרים לכפתור הפשוט, בלי לחסום את הלומד */
-    function fallback(note) {
-      wrap.innerHTML = "";
-      if (note) wrap.appendChild(el("p", { class: "rec-note" }, [note]));
-      wrap.appendChild(el("button", { class: "btn primary big", onclick: () => onDone(null) },
-        ["קָרָאתִי — לַחִידָה ›"]));
+    /* דילוג קיים תמיד — גם בלי מיקרופון וגם אחרי סירוב.
+       הלומד לא נחסם בגלל הרשאה. */
+    function finishUp(m) {
+      if (url) URL.revokeObjectURL(url);
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      onDone(m);
     }
-    if (!canRecord()) { fallback("הַדַּפְדְּפָן הַזֶּה לֹא תּוֹמֵךְ בְּהַקְלָטָה."); return wrap; }
+    if (!canRecord()) {
+      btn.disabled = true; btn.textContent = "🎙️ אֵין הַקְלָטָה בַּדַּפְדְּפָן הַזֶּה";
+      skip.className = "btn primary big"; skip.textContent = "קָרָאתִי — לַחִידָה ›";
+      return wrap;
+    }
 
-    btn.addEventListener("click", () => rec && rec.state === "recording" ? stop() : start());
+    btn.addEventListener("click", () => recording ? stop() : start());
 
     async function start() {
       try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-      catch (e) { return fallback("לֹא נִתְּנָה גִּישָׁה לַמִּיקְרוֹפוֹן."); }
+      catch (e) { return UI.toast("אֵין גִּישָׁה לְמִיקְרוֹפוֹן"); }
       chunks = [];
-      try { rec = new MediaRecorder(stream); }
-      catch (e) { return fallback("לֹא נִתָּן לְהַקְלִיט בַּדַּפְדְּפָן הַזֶּה."); }
+      /* בחירת פורמט: ספארי לא תומך ב-webm, ולכן ננסה כמה ונפול לברירת המחדל */
+      let opts = {};
+      if (MediaRecorder.isTypeSupported) {
+        const t = ["audio/webm", "audio/mp4", "audio/ogg"].find(x => MediaRecorder.isTypeSupported(x));
+        if (t) opts = { mimeType: t };
+      }
+      try { rec = new MediaRecorder(stream, opts); }
+      catch (e) { try { rec = new MediaRecorder(stream); } catch (e2) { return UI.toast("לֹא נִתָּן לְהַקְלִיט כָּאן"); } }
       rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-      rec.onstop = finish;
+      rec.onstop = done;
       rec.start();
-      t0 = performance.now();
-      btn.textContent = "⏹️ סִיַּמְתִּי לִקְרֹא";
+      recording = true; t0 = performance.now();
+      btn.textContent = "⏹️ עֲצֹר";
       btn.classList.add("recording");
-      out.innerHTML = "";
-      tick = setInterval(() => {
-        timer.textContent = "🔴 " + ((performance.now() - t0) / 1000).toFixed(1) + " שְׁנִיּוֹת";
-      }, 100);
+      play.innerHTML = "";
     }
     function stop() { try { rec.stop(); } catch (e) {} }
-    function finish() {
-      clearInterval(tick);
+    function done() {
       const secs = (performance.now() - t0) / 1000;
-      /* משחררים את המיקרופון מיד — אחרת הנורה נשארת דולקת */
-      if (stream) stream.getTracks().forEach(t => t.stop());
+      recording = false;
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      btn.textContent = "🔴 הַקְלֵט שׁוּב";
       btn.classList.remove("recording");
-      btn.textContent = "🔁 הַקְלֵט שׁוּב";
-      if (url) URL.revokeObjectURL(url);
       const blob = new Blob(chunks, { type: (chunks[0] && chunks[0].type) || "audio/webm" });
+      if (!blob.size) return UI.toast("הַהַקְלָטָה לֹא נִקְלְטָה, נַסֵּה שׁוּב 🎙️");
+      if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(blob);
       const wpm = secs > 0 ? Math.round(words / (secs / 60)) : 0;
-      timer.textContent = "";
-      out.innerHTML = "";
-      out.appendChild(el("audio", { controls: "", src: url, class: "rec-audio" }));
-      out.appendChild(el("div", { class: "rec-stat" }, [
-        el("b", {}, [secs.toFixed(1) + " שְׁנִיּוֹת"]),
-        el("span", {}, [words + " מִלִּים · " + wpm + " מִלִּים לְדַקָּה"])
+      play.innerHTML = "";
+      play.appendChild(el("audio", { controls: "", src: url }));
+      /* המדד הוא המשוב. לנער בן 15 מספר שאפשר לשפר עדיף על "נשמעת נהדר" */
+      play.appendChild(el("div", { class: "rec-stat" }, [
+        el("b", {}, [wpm + " מִלִּים לְדַקָּה"]),
+        el("span", {}, [secs.toFixed(1) + " שְׁנִיּוֹת · " + words + " מִלִּים"])
       ]));
-      out.appendChild(el("p", { class: "rec-note" }, ["הַהַקְלָטָה נִשְׁאֶרֶת אֶצְלְךָ בִּלְבַד וְאֵינָהּ נִשְׁמֶרֶת."]));
-      out.appendChild(el("button", { class: "btn primary big", onclick: () => {
-        if (url) URL.revokeObjectURL(url);
-        onDone({ secs: secs, wpm: wpm, words: words });
-      } }, ["לַחִידָה ›"]));
+      play.appendChild(el("p", { class: "rec-note" }, ["הַהַקְלָטָה נִשְׁאֶרֶת אֶצְלְךָ בִּלְבַד וְאֵינָהּ נִשְׁמֶרֶת."]));
+      play.appendChild(el("button", { class: "btn primary", onclick: () =>
+        finishUp({ secs: secs, wpm: wpm, words: words }) }, ["הַמְשֵׁךְ ←"]));
     }
     return wrap;
   }
