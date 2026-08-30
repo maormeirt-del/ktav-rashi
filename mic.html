@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בְּדִיקַת מִיקְרוֹפוֹן</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,sans-serif;background:#f5ecd9;color:#1c2a52;
+       padding:18px;line-height:1.6;max-width:560px;margin:0 auto}
+  h1{font-size:1.35rem;margin-bottom:4px}
+  .sub{color:#7c7460;font-size:.9rem;margin-bottom:16px}
+  .row{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;
+       display:flex;gap:10px;align-items:flex-start;box-shadow:0 2px 8px rgba(40,40,20,.08)}
+  .row .k{flex:0 0 auto;font-weight:700;font-size:.85rem;min-width:120px}
+  .row .v{font-size:.85rem;word-break:break-word;flex:1}
+  .ok{border-inline-start:5px solid #2fa463}
+  .bad{border-inline-start:5px solid #e05a4e}
+  .warn{border-inline-start:5px solid #e6a817}
+  button{width:100%;padding:16px;font:inherit;font-size:1.05rem;font-weight:700;
+         background:#b58a2e;color:#fff;border:0;border-radius:14px;margin:14px 0;cursor:pointer}
+  button:disabled{opacity:.5}
+  #verdict{background:#fff;border-radius:14px;padding:16px;margin-top:14px;font-weight:700;
+           box-shadow:0 2px 8px rgba(40,40,20,.08)}
+  audio{width:100%;margin-top:10px}
+  .hint{font-size:.8rem;color:#7c7460;margin-top:14px;text-align:center}
+</style>
+</head>
+<body>
+<h1>בְּדִיקַת מִיקְרוֹפוֹן</h1>
+<p class="sub">לוחצים על הכפתור, מדברים שתי שניות, ומצלמים את המסך.</p>
+<div id="env"></div>
+<button id="go">🎙️ הרץ בדיקה</button>
+<div id="out"></div>
+<p class="hint">הבדיקה מקומית לגמרי. שום דבר לא נשלח לשום מקום.</p>
+
+<script>
+const env = document.getElementById("env"), out = document.getElementById("out");
+function row(k, v, cls){
+  const d = document.createElement("div");
+  d.className = "row " + (cls || "");
+  d.innerHTML = '<span class="k">' + k + '</span><span class="v">' + v + '</span>';
+  return d;
+}
+/* ---- סביבה ---- */
+const standalone = window.matchMedia("(display-mode: standalone)").matches ||
+                   window.navigator.standalone === true;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+env.appendChild(row("חיבור מאובטח", window.isSecureContext ? "כן" : "לא — חובה HTTPS",
+  window.isSecureContext ? "ok" : "bad"));
+env.appendChild(row("נפתח מ", standalone ? "מסך הבית (PWA)" : "דפדפן",
+  standalone && isIOS ? "warn" : "ok"));
+env.appendChild(row("mediaDevices", navigator.mediaDevices ? "קיים" : "חסר",
+  navigator.mediaDevices ? "ok" : "bad"));
+env.appendChild(row("MediaRecorder", window.MediaRecorder ? "קיים" : "חסר",
+  window.MediaRecorder ? "ok" : "bad"));
+if (window.MediaRecorder && MediaRecorder.isTypeSupported) {
+  const types = ["audio/mp4","audio/webm","audio/webm;codecs=opus","audio/ogg"];
+  const sup = types.filter(t => MediaRecorder.isTypeSupported(t));
+  env.appendChild(row("פורמטים נתמכים", sup.length ? sup.join("<br>") : "אף אחד",
+    sup.length ? "ok" : "bad"));
+} else {
+  env.appendChild(row("פורמטים נתמכים", "אין isTypeSupported", "warn"));
+}
+if (navigator.permissions && navigator.permissions.query) {
+  navigator.permissions.query({ name: "microphone" })
+    .then(p => env.appendChild(row("הרשאת מיקרופון", p.state, p.state === "denied" ? "bad" : "ok")))
+    .catch(() => env.appendChild(row("הרשאת מיקרופון", "לא ניתן לבדוק", "warn")));
+}
+/* שורת הגרסה מקבלת מזהה משלה: שורת ההרשאות נוספת אחריה באיחור,
+   ו-lastChild היה כותב את הגרסה לשורה הלא נכונה. */
+const verRow = row("גרסת קוד", "בודק…", "");
+verRow.id = "verRow";
+env.appendChild(verRow);
+fetch("sw.js?cb=" + Date.now()).then(r => r.text()).then(t => {
+  const m = t.match(/rashi-v\d+/);
+  document.querySelector("#verRow .v").textContent = m ? m[0] : "לא נמצא";
+}).catch(() => { document.querySelector("#verRow .v").textContent = "לא נטען"; });
+env.appendChild(row("דפדפן", navigator.userAgent, ""));
+
+/* ---- בדיקה חיה ---- */
+document.getElementById("go").addEventListener("click", async function () {
+  this.disabled = true; out.innerHTML = "";
+  let stream, rec, chunks = [], t0 = 0;
+  const say = (k, v, c) => out.appendChild(row(k, v, c));
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    say("קבלת מיקרופון", "הצליח", "ok");
+    const tr = stream.getAudioTracks()[0];
+    say("ערוץ קול", tr ? (tr.label || "ללא שם") + " · " + tr.readyState : "אין ערוץ", tr ? "ok" : "bad");
+  } catch (e) {
+    say("קבלת מיקרופון", "נכשל — " + e.name + ": " + e.message, "bad");
+    this.disabled = false; return;
+  }
+  let opts = {};
+  if (window.MediaRecorder && MediaRecorder.isTypeSupported) {
+    const t = ["audio/mp4","audio/webm","audio/ogg"].find(x => MediaRecorder.isTypeSupported(x));
+    if (t) opts = { mimeType: t };
+  }
+  try { rec = new MediaRecorder(stream, opts); }
+  catch (e) { try { rec = new MediaRecorder(stream); } catch (e2) {
+    say("יצירת מקליט", "נכשל — " + e2.name, "bad"); this.disabled = false; return; } }
+  say("מקליט נוצר", rec.mimeType || "ללא mimeType", "ok");
+
+  let order = [];
+  rec.ondataavailable = e => { order.push("data:" + (e.data ? e.data.size : 0));
+                               if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onerror = e => say("שגיאת מקליט", (e.error && e.error.name) || "לא ידוע", "bad");
+  rec.onstop = () => order.push("stop");
+  rec.start(500);
+  t0 = Date.now();
+  say("מקליט 2 שניות", "דבר עכשיו…", "warn");
+  await new Promise(r => setTimeout(r, 2000));
+  try { rec.requestData(); } catch (e) {}
+  rec.stop();
+  await new Promise(r => setTimeout(r, 800));
+  stream.getTracks().forEach(t => t.stop());
+
+  const blob = new Blob(chunks, { type: (chunks[0] && chunks[0].type) || "audio/webm" });
+  say("סדר האירועים", order.join(" ← ") || "כלום", order.length ? "ok" : "bad");
+  say("מספר פרוסות", String(chunks.length), chunks.length ? "ok" : "bad");
+  say("גודל הקובץ", blob.size + " בייטים", blob.size ? "ok" : "bad");
+  if (blob.size) {
+    const a = document.createElement("audio");
+    a.controls = true; a.src = URL.createObjectURL(blob);
+    out.appendChild(a);
+  }
+  const v = document.createElement("div");
+  v.id = "verdict";
+  v.textContent = blob.size
+    ? "✅ ההקלטה עובדת במכשיר הזה. אם באפליקציה זה נכשל, הבעיה בקוד ולא במכשיר."
+    : "❌ ההקלטה יוצאת ריקה במכשיר הזה. צלם את המסך ושלח.";
+  out.appendChild(v);
+  this.disabled = false;
+});
+</script>
+</body>
+</html>

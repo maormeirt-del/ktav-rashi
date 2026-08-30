@@ -1,7 +1,7 @@
 /* Service Worker — אופליין מלא. אפס תלות ברשת אחרי טעינה ראשונה. */
-const CACHE = "rashi-v33";
+const CACHE = "rashi-v35";
 const ASSETS = [
-  "./", "./index.html", "./manifest.json",
+  "./", "./index.html", "./mic.html", "./manifest.json",
   "./css/style.css", "./fonts/fonts.css",
   "./fonts/noto-rashi-400.woff2", "./fonts/noto-rashi-700.woff2",
   "./fonts/tel-aviv-modernist-400.woff2", "./fonts/tel-aviv-modernist-700.woff2",
@@ -18,13 +18,29 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
+/* ⚠️ קוד = network-first. פונטים ותמונות = cache-first.
+   קודם הכל היה cache-first, והתוצאה: תיקון שנפרס לא הגיע למכשיר
+   שכבר התקין את האפליקציה. הלומד נשאר עם באג שכבר תוקן, ואין לו
+   שום דרך לדעת. פונטים לא משתנים לעולם ולכן הם נשארים מהמטמון. */
+const STATIC = /\.(?:woff2|svg|png|jpg|webp|mp3)$/i;
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+  const url = new URL(e.request.url);
+  if (url.origin !== location.origin) return;
+
+  if (STATIC.test(url.pathname)) {
+    e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
       return res;
-    }).catch(() => hit))
+    })));
+    return;
+  }
+  e.respondWith(
+    fetch(e.request).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+      return res;
+    }).catch(() => caches.match(e.request))   // אופליין — נופלים למטמון
   );
 });
