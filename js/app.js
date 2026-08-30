@@ -279,9 +279,9 @@ window.App = (function () {
   function beitMidrashBg() {
     /* פלטת שדרות אמיתית: חום כהה, בורדו, קרם, זהב וירוק-בקבוק —
        כמו קיר ספרי קודש. אחיד מדי נראה כמו לבנים, לא כמו ספרים. */
-    const SPINE = ["#6b4726", "#8a5a2b", "#4e3520", "#a8763c", "#7a3f2a",
-                   "#93683a", "#5b3d24", "#b58a4e", "#6a4a30", "#8f5636",
-                   "#d8c093", "#3f4a35", "#7d4b2c", "#a38452"];
+    const SPINE = ["#5a3a1e", "#7a4a22", "#3e2c18", "#96632c", "#6b2f22",
+                   "#84572c", "#4a2f1a", "#a87a3e", "#59401f", "#7d4526",
+                   "#cdb083", "#33402c", "#6b3a20", "#8f7040"];
     const BAYS = 3, ROWS = 5;
     const bayW = 200 / BAYS, boardH = 3.2;
     let g = "";
@@ -315,9 +315,9 @@ window.App = (function () {
     return '' +
     '<svg class="bm-wall" viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
       '<defs><linearGradient id="bmFade" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0" stop-color="#fdf6e6" stop-opacity=".34"/>' +
-        '<stop offset="1" stop-color="#f2e3c4" stop-opacity=".46"/></linearGradient></defs>' +
-      '<g opacity=".82">' + g + '</g>' +
+        '<stop offset="0" stop-color="#fdf6e6" stop-opacity=".10"/>' +
+        '<stop offset="1" stop-color="#f2e3c4" stop-opacity=".18"/></linearGradient></defs>' +
+      '<g opacity="1">' + g + '</g>' +
       /* שכבת ריכוך — הרקע חייב להישאר רקע, אחרת התחנות נבלעות בו */
       '<rect width="200" height="120" fill="url(#bmFade)"/>' +
     '</svg>';
