@@ -727,3 +727,21 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 
 /* שני מטבעות נפרדים בהידר: 📖 קריאה (פותח ספרים) · ✦ נקודות (דרגה) */
 .chip.read { background: hsla(42,80%,55%,.22); color: var(--ink); font-weight: 800; }
+
+
+/* ===========================================================
+   הקלטת הקריאה — עולם "בלי רמזים"
+   =========================================================== */
+.rec-wrap { margin-top: 14px; }
+.rec-btn.recording { background: #c0392b; border-color: #c0392b; animation: recpulse 1.1s infinite; }
+@keyframes recpulse { 50% { opacity: .78; } }
+.rec-time { text-align: center; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.15rem; color: #c0392b; min-height: 26px; margin-top: 10px; }
+.rec-out { margin-top: 8px; }
+.rec-audio { width: 100%; margin-bottom: 10px; }
+.rec-stat { display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: hsla(42,80%,55%,.16); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+.rec-stat b { font-family: var(--font-display); font-size: 1.35rem; }
+.rec-stat span { font-size: .88rem; color: var(--muted); font-weight: 600; }
+.rec-note { font-size: .78rem; color: var(--muted); text-align: center;
+  line-height: 1.6; margin-bottom: 10px; }

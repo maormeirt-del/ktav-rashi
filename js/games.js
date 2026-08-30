@@ -151,7 +151,9 @@ window.Games = (function () {
     const first = State.markGameDone(game.id, world.id, total);
     if (!first && total) State.award(total);
 
-    const rows = (o.rows || []).concat([
+    /* אם המשימה הקליטה קריאה בקול, הקצב הוא המדד האמיתי של שטף */
+    const rd = game && game._reading;
+    const rows = (rd ? [["קְצַב קְרִיאָה", rd.wpm + " מִלִּים לְדַקָּה"]] : []).concat(o.rows || []).concat([
       ["זְמַן", o.ch.used + " שְׁנִיּוֹת"],
       ["נִסְיוֹנוֹת נוֹסָפִים", accUsed + " מִתּוֹךְ " + accMax]
     ]).concat(o.ch.peeks ? [["הֲצָצוֹת בַּמַּפְתֵּחַ", o.ch.peeks]] : []);

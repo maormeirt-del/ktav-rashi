@@ -497,6 +497,85 @@ window.Riddles = (function () {
     Games.runMC(game, world, qs);
   }
 
+
+  /* ===========================================================
+     הַקְלָטַת הַקְּרִיאָה — עולם "בלי רמזים" בלבד.
+     "קראתי" הוא הצהרה שאי אפשר לבדוק. שטף נמדד בקריאה בקול,
+     ולכן כאן הנער קורא, שומע את עצמו, ורואה מדד קצב אמיתי.
+
+     ⚠️ פרטיות: ההקלטה נשארת blob מקומי בזיכרון הדפדפן.
+     היא לא נשלחת לשום מקום ולא נשמרת. זה קולו של קטין.
+     המיקרופון משוחרר מיד בסיום (stop על כל track).
+     =========================================================== */
+  function canRecord() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  }
+  function recordBlock(passage, onDone) {
+    const words = passage.plain.trim().split(/\s+/).length;
+    const wrap = el("div", { class: "rec-wrap" });
+    let rec = null, stream = null, chunks = [], url = null, t0 = 0, tick = null;
+
+    const btn = el("button", { class: "btn primary big rec-btn" }, ["🎙️ הַקְלֵט אֶת הַקְּרִיאָה"]);
+    const timer = el("div", { class: "rec-time" });
+    const out = el("div", { class: "rec-out" });
+    wrap.appendChild(btn); wrap.appendChild(timer); wrap.appendChild(out);
+
+    /* אין מיקרופון או אין תמיכה — חוזרים לכפתור הפשוט, בלי לחסום את הלומד */
+    function fallback(note) {
+      wrap.innerHTML = "";
+      if (note) wrap.appendChild(el("p", { class: "rec-note" }, [note]));
+      wrap.appendChild(el("button", { class: "btn primary big", onclick: () => onDone(null) },
+        ["קָרָאתִי — לַחִידָה ›"]));
+    }
+    if (!canRecord()) { fallback("הַדַּפְדְּפָן הַזֶּה לֹא תּוֹמֵךְ בְּהַקְלָטָה."); return wrap; }
+
+    btn.addEventListener("click", () => rec && rec.state === "recording" ? stop() : start());
+
+    async function start() {
+      try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch (e) { return fallback("לֹא נִתְּנָה גִּישָׁה לַמִּיקְרוֹפוֹן."); }
+      chunks = [];
+      try { rec = new MediaRecorder(stream); }
+      catch (e) { return fallback("לֹא נִתָּן לְהַקְלִיט בַּדַּפְדְּפָן הַזֶּה."); }
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = finish;
+      rec.start();
+      t0 = performance.now();
+      btn.textContent = "⏹️ סִיַּמְתִּי לִקְרֹא";
+      btn.classList.add("recording");
+      out.innerHTML = "";
+      tick = setInterval(() => {
+        timer.textContent = "🔴 " + ((performance.now() - t0) / 1000).toFixed(1) + " שְׁנִיּוֹת";
+      }, 100);
+    }
+    function stop() { try { rec.stop(); } catch (e) {} }
+    function finish() {
+      clearInterval(tick);
+      const secs = (performance.now() - t0) / 1000;
+      /* משחררים את המיקרופון מיד — אחרת הנורה נשארת דולקת */
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      btn.classList.remove("recording");
+      btn.textContent = "🔁 הַקְלֵט שׁוּב";
+      if (url) URL.revokeObjectURL(url);
+      const blob = new Blob(chunks, { type: (chunks[0] && chunks[0].type) || "audio/webm" });
+      url = URL.createObjectURL(blob);
+      const wpm = secs > 0 ? Math.round(words / (secs / 60)) : 0;
+      timer.textContent = "";
+      out.innerHTML = "";
+      out.appendChild(el("audio", { controls: "", src: url, class: "rec-audio" }));
+      out.appendChild(el("div", { class: "rec-stat" }, [
+        el("b", {}, [secs.toFixed(1) + " שְׁנִיּוֹת"]),
+        el("span", {}, [words + " מִלִּים · " + wpm + " מִלִּים לְדַקָּה"])
+      ]));
+      out.appendChild(el("p", { class: "rec-note" }, ["הַהַקְלָטָה נִשְׁאֶרֶת אֶצְלְךָ בִּלְבַד וְאֵינָהּ נִשְׁמֶרֶת."]));
+      out.appendChild(el("button", { class: "btn primary big", onclick: () => {
+        if (url) URL.revokeObjectURL(url);
+        onDone({ secs: secs, wpm: wpm, words: words });
+      } }, ["לַחִידָה ›"]));
+    }
+    return wrap;
+  }
+
   /* ============ 6. חִידַת שֶׁטֶף — בלי רמזים ============
      השאלה בסוף היא על **מילה מתוך הקטע**, לא על תרגום הקטע כולו.
      ארבעה תרגומים של ארבעה קטעים שונים נפתרים בהתאמת משמעות;
@@ -504,7 +583,7 @@ window.Riddles = (function () {
   function fluent(game, world) {
     const list = window.passagesByLevel(game.lvl || 6);
     const p = list[Math.floor(Math.random() * list.length)];
-    let ch = null, over = false;
+    let ch = null, over = false, reading = null;
     Games.frame(game, world, (body) => {
       /* כאן השעון רץ כבר בזמן הקריאה. בעולם הזה המהירות היא כל העניין —
          שטף זה לא "לפענח בסוף", זה לקרוא. אותו שעון ממשיך לשאלה. */
@@ -517,7 +596,7 @@ window.Riddles = (function () {
         el("div", { class: "src" }, [p.src, nikTag(game)]),
         el("div", { class: "passage" }, [rashi(window.applyNik(p.t, nikOf(game)))])
       ]));
-      body.appendChild(el("button", { class: "btn primary big", onclick: solve }, ["קָרָאתִי — לַחִידָה ›"]));
+      body.appendChild(recordBlock(p, (m) => { reading = m; solve(); }));
       ch.start();
     });
 
@@ -547,6 +626,8 @@ window.Riddles = (function () {
           onResult: (ok) => { if (ok) Audio2.speak(plain); State.recordResult("word:" + plain, ok, 6); }
         };
       });
+      /* מדד הקצב עובר לכרטיס הסיום — אחרת ההקלטה היא חוויה ולא מדידה */
+      if (reading) game._reading = reading;
       Games.runMC(game, world, qs, ch);
     }
   }
