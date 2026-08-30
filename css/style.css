@@ -751,3 +751,27 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
   line-height: 1.6; margin: 10px 0; }
 .rec-play .btn { width: 100%; }
 .rec-wrap > .btn.ghost { width: 100%; }
+
+
+/* ===========================================================
+   כַּרְטִיס שְׁאֵלָה — אותו מבנה כמו "אותיות של אור":
+   כרטיס לבן · אפשרויות טקסט ברשימה אנכית · שורת משוב קבועה.
+   =========================================================== */
+.q-card { background: var(--card); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow); }
+.q-card .riddle { background: none; border: 0; box-shadow: none; padding: 0 0 4px; }
+.options.stack { display: flex; flex-direction: column; gap: 10px; }
+.options.stack .opt { border-width: 3px; border-radius: 16px; padding: 14px;
+  text-align: center; }
+.options.stack .opt .wopt { font-size: 1.7rem; }
+.options.stack .opt .tropt,
+.options.stack .opt .sqword,
+.options.stack .opt .name { font-size: 1.15rem; }
+/* שורת המשוב שומרת גובה קבוע, אחרת הכפתורים קופצים בכל תשובה */
+.tip { min-height: 26px; font-weight: 700; }
+.fb-ok { color: #2fa463; font-family: var(--font-display); font-size: 1.05rem; }
+.fb-note { display: block; color: var(--muted); font-weight: 600;
+  font-size: .86rem; margin-top: 4px; }
+
+.rec-lead { text-align: center; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.02rem; color: var(--ink); margin: 16px 0 2px; }

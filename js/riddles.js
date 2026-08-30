@@ -463,38 +463,68 @@ window.Riddles = (function () {
   /* ============ 5. חִידַת שׁוּרָה — מילה חסרה בקטע רש״י ============
      המסיחים באים **מתוך הקטע עצמו**: קודם זוגות מינימליים של המילה
      החסרה, ואז מילים אחרות מאותו קטע. כך התרגום נשאר הקשר, ולא פתרון. */
+  /* כל משימה שיש בה טקסט אמיתי עוברת דרך קריאה בקול: הטקסט, הקלטה,
+     ואז השאלות. זו הצורה של "אותיות של אור" — קוראים, שומעים את
+     עצמך, ורק אז נשאלים. הדילוג קיים תמיד. */
+  function readAloudThen(game, world, passage, ch, host, onDone) {
+    host.appendChild(el("div", { class: "rec-lead" }, ["קְרָא אֶת הַקֶּטַע בְּקוֹל, וְאָז נִשְׁאַל עָלָיו."]));
+    host.appendChild(recordBlock(passage, (m) => { if (m) game._reading = m; onDone(); }));
+  }
+
   function line(game, world) {
-    const list = window.passagesByLevel(game.lvl || 5).filter(p => p.t.split(" ").length >= 4);
-    const chosen = pick(list, Math.min(4, list.length));
-    const qs = chosen.map(p => {
-      const ws = window.applyNik(p.t, nikOf(game)).split(" "), ps = p.plain.split(" ");
-      const wi = 1 + Math.floor(Math.random() * (ws.length - 1));
-      const answer = ws[wi];
-      const masked = ws.map((x, i) => i === wi ? '<b class="blank">◻◻◻</b>' : x).join(" ");
-      const own = ws.filter((x, i) => i !== wi && x.length > 2 && x !== answer);
-      const twins = twinVariants(answer, 2, ws);
-      const distract = [...twins, ...shuffle(own)].slice(0, 3);
-      const options = shuffle([{ t: answer, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
-      const key = "word:" + (ps[wi] || answer).replace(/[\u0591-\u05C7]/g, "");
-      return {
-        prompt: (n) => {
-          n.appendChild(riddleCard([
-            el("div", { class: "src" }, [p.src, nikTag(game)]),
-            el("div", { class: "passage masked", html: '<span class="rashi">' + masked + "</span>" }),
-            el("div", { class: "hint-chip wrap" }, [p.tr])
-          ], "tight"));
-        },
-        options: options.map(o => ({ node: el("span", { class: "wopt" }, [rashi(o.t)]), ok: o.ok, t: o.t })),
-        explain: (o) => {
-          const d = diffLetter(o.t, answer);
-          return whyWrongText(o.t, answer, d
-            ? "הַהֶבְדֵּל הוּא אוֹת אַחַת: בָּחַרְתָּ " + NAME(d[0]) + ", וְצָרִיךְ " + NAME(d[1]) + ". " + (window.shortOf(d[1]) || "")
-            : "לְפִי מָה שֶׁהַקֶּטַע אוֹמֵר: " + p.tr);
-        },
-        onResult: (ok) => { if (ok) Audio2.speak(ps[wi] || ""); State.recordResult(key, ok, 4); }
-      };
+    /* קטע אחד, לא ארבעה. קוראים אותו בקול, מקליטים, ואז נשאלים
+       שלוש שאלות עליו — כמו שסיפור ב"אותיות של אור" עובד. */
+    const list = window.passagesByLevel(game.lvl || 5).filter(p => p.t.split(" ").length >= 5);
+    const p = list[Math.floor(Math.random() * list.length)];
+    let ch = null, over = false;
+
+    Games.frame(game, world, (body) => {
+      ch = Games.challenge(body, () => {
+        if (over) return; over = true; ch.stop();
+        Games.scoreCard(game, world, { won: false, why: "נִגְמַר הַזְּמַן", ch, base: 0,
+          rows: [["הַקֶּטַע", p.src]] });
+      }, { tries: Games.triesFor(game, world), limit: game.limit, peek: true });
+      body.appendChild(riddleCard([
+        el("div", { class: "src" }, [p.src, nikTag(game)]),
+        el("div", { class: "passage" }, [rashi(window.applyNik(p.t, nikOf(game)))]),
+        el("div", { class: "hint-chip wrap" }, [p.tr])
+      ]));
+      readAloudThen(game, world, p, ch, body, ask3);
+      ch.start();
     });
-    Games.runMC(game, world, qs);
+
+    function ask3() {
+      if (over) return;
+      const ws = window.applyNik(p.t, nikOf(game)).split(" "), ps = p.plain.split(" ");
+      const idxs = ws.map((w, i) => i).filter(i =>
+        i > 0 && ws[i].replace(/[\u0591-\u05C7]/g, "").length >= 3);
+      const qs = pick(idxs, Math.min(3, idxs.length)).map(wi => {
+        const answer = ws[wi];
+        const masked = ws.map((x, i) => i === wi ? '<b class="blank">◻◻◻</b>' : x).join(" ");
+        const own = ws.filter((x, i) => i !== wi && x.length > 2 && x !== answer);
+        const twins = twinVariants(answer, 2, ws);
+        const distract = [...twins, ...shuffle(own)].slice(0, 3);
+        const options = shuffle([{ t: answer, ok: true }, ...distract.map(t => ({ t, ok: false }))]);
+        const key = "word:" + (ps[wi] || answer).replace(/[\u0591-\u05C7]/g, "");
+        return {
+          prompt: (n) => {
+            n.appendChild(riddleCard([
+              el("div", { class: "passage masked", html: '<span class="rashi">' + masked + "</span>" }),
+              el("div", { class: "hint-chip" }, ["אֵיזוֹ מִלָּה חֲסֵרָה?"])
+            ], "tight"));
+          },
+          options: options.map(o => ({ node: el("span", { class: "wopt" }, [rashi(o.t)]), ok: o.ok, t: o.t })),
+          explain: (o) => {
+            const d = diffLetter(o.t, answer);
+            return whyWrongText(o.t, answer, d
+              ? "הַהֶבְדֵּל הוּא אוֹת אַחַת: בָּחַרְתָּ " + NAME(d[0]) + ", וְצָרִיךְ " + NAME(d[1]) + ". " + (window.shortOf(d[1]) || "")
+              : "לְפִי מָה שֶׁהַקֶּטַע אוֹמֵר: " + p.tr);
+          },
+          onResult: (ok) => { if (ok) Audio2.speak(ps[wi] || ""); State.recordResult(key, ok, 4); }
+        };
+      });
+      Games.runMC(game, world, qs, ch);
+    }
   }
 
 

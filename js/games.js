@@ -229,13 +229,19 @@ window.Games = (function () {
       if (i >= questions.length) return end(true);
       const q = questions[i]; stage.innerHTML = "";
       const promptWrap = el("div", { class: "prompt" }); q.prompt(promptWrap);
-      const opts = el("div", { class: "options n" + q.options.length });
+      /* אפשרויות טקסט (מילה, תרגום, שם אות) יורדות ברשימה אנכית, כמו
+         ב"אותיות של אור". גליפים נשארים ברשת — שם רוחב הוא מה שמאפשר
+         לראות את הצורה. */
+      const textOpts = q.options.every(o =>
+        o.node && /\b(wopt|tropt|sqword|name)\b/.test(o.node.className || ""));
+      const opts = el("div", { class: "options n" + q.options.length + (textOpts ? " stack" : "") });
       q.options.forEach(o => {
         const b = el("button", { class: "opt", onclick: () => choose(o, b) }, [o.node]);
         opts.appendChild(b);
       });
       const tip = el("div", { class: "tip" });
-      stage.appendChild(promptWrap); stage.appendChild(opts); stage.appendChild(tip);
+      const card = el("div", { class: "q-card" }, [promptWrap, opts, tip]);
+      stage.appendChild(card);
 
       function choose(o, btn) {
         if (over || btn.classList.contains("locked")) return;
@@ -243,7 +249,9 @@ window.Games = (function () {
           [...opts.children].forEach(c => c.classList.add("locked"));
           btn.classList.add("ok"); score++; setDot(i, true); Audio2.sfx.correct();
           q.onResult && q.onResult(true);
-          tip.innerHTML = ""; if (q.tip) tip.textContent = q.tip;
+          tip.innerHTML = "";
+          tip.appendChild(el("b", { class: "fb-ok" }, ["מְצֻיָּן! 🎉"]));
+          if (q.tip) tip.appendChild(el("span", { class: "fb-note" }, [q.tip]));
           setTimeout(() => { i++; show(); }, 520);
           return;
         }
