@@ -540,6 +540,50 @@ window.Riddles = (function () {
   function canRecord() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
   }
+
+  /* ===========================================================
+     הרשאה שנדחתה פעם אחת לא נשאלת שוב לעולם, ושום קוד לא מחזיר
+     אותה. הדבר היחיד שאפשר לעשות הוא להגיד בדיוק מה ללחוץ —
+     ולכן ההוראות מותאמות למכשיר ולא גנריות.
+     =========================================================== */
+  function micHowTo() {
+    const ua = navigator.userAgent;
+    const iOS = /iPad|iPhone|iPod/.test(ua) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const android = /Android/.test(ua);
+    const chrome = /Chrome|CriOS|Edg/.test(ua);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches ||
+                       window.navigator.standalone === true;
+    if (iOS && standalone)
+      return ["בָּאַיְיפוֹן, אַפְלִיקַצְיָה שֶׁנִּפְתְּחָה מִמָּסַךְ הַבַּיִת חוֹסֶמֶת מִיקְרוֹפוֹן.",
+              "פְּתַח אֶת הָאַתָּר בְּסָפָארִי בִּמְקוֹם מִמָּסַךְ הַבַּיִת."];
+    if (iOS)
+      return ["הַגְדָּרוֹת ← סָפָארִי ← מִיקְרוֹפוֹן ← אֶפְשֵׁר",
+              "אוֹ: בְּשׁוּרַת הַכְּתֹבֶת לְחַץ «אA» ← הַגְדָּרוֹת אֲתָר ← מִיקְרוֹפוֹן ← אֶפְשֵׁר",
+              "אַחַר כָּךְ רַעֲנֵן אֶת הַדַּף."];
+    if (android)
+      return ["לְחַץ עַל סֶמֶל הַמַּנְעוּל בְּשׁוּרַת הַכְּתֹבֶת ← הַרְשָׁאוֹת ← מִיקְרוֹפוֹן ← אֶפְשֵׁר",
+              "אַחַר כָּךְ רַעֲנֵן אֶת הַדַּף."];
+    if (chrome)
+      return ["לְחַץ עַל הַסֶּמֶל שֶׁמִּשְׂמֹאל לַכְּתֹבֶת ← מִיקְרוֹפוֹן ← אֶפְשֵׁר",
+              "אִם אֵין שָׁם מִיקְרוֹפוֹן: chrome://settings/content/microphone",
+              "אַחַר כָּךְ רַעֲנֵן אֶת הַדַּף."];
+    return ["סָפָארִי ← הַגְדָּרוֹת לָאֲתָר הַזֶּה ← מִיקְרוֹפוֹן ← אֶפְשֵׁר",
+            "וְגַם: הַגְדָּרוֹת הַמַּעֲרֶכֶת ← פְּרָטִיּוּת ← מִיקְרוֹפוֹן ← סַמֵּן אֶת הַדַּפְדְּפָן",
+            "אַחַר כָּךְ רַעֲנֵן אֶת הַדַּף."];
+  }
+  function micBlockedNode() {
+    const d = el("div", { class: "mic-blocked" }, [
+      el("b", {}, ["הַמִּיקְרוֹפוֹן חָסוּם בַּדַּפְדְּפָן"]),
+      el("p", {}, ["הַדַּפְדְּפָן לֹא יִשְׁאַל שׁוּב מֵעַצְמוֹ. צָרִיךְ לְאַפְשֵׁר יָדָנִית:"])
+    ]);
+    const ol = el("ol", {});
+    micHowTo().forEach(t => ol.appendChild(el("li", {}, [t])));
+    d.appendChild(ol);
+    d.appendChild(el("button", { class: "btn ghost sm", onclick: () => location.reload() }, ["רַעֲנֵן ↻"]));
+    return d;
+  }
+
   function recordBlock(passage, onDone) {
     const words = passage.plain.trim().split(/\s+/).length;
     const wrap = el("div", { class: "rec-wrap" });
@@ -589,9 +633,15 @@ window.Riddles = (function () {
       btn.textContent = "מְבַקֵּשׁ גִּישָׁה לַמִּיקְרוֹפוֹן…";
       try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
       catch (e) {
-        return fail(e && e.name === "NotAllowedError"
-          ? "הַגִּישָׁה לַמִּיקְרוֹפוֹן נֶחְסְמָה. אַפְשֵׁר אוֹתָהּ בְּהַגְדָּרוֹת הַדַּפְדְּפָן."
-          : "לֹא נִמְצָא מִיקְרוֹפוֹן (" + ((e && e.name) || "שְׁגִיאָה") + ").");
+        if (e && (e.name === "NotAllowedError" || e.name === "SecurityError")) {
+          cleanup(); recording = false; busy = false;
+          btn.classList.remove("recording");
+          btn.textContent = "🔴 נַסֵּה שׁוּב";
+          timer.textContent = "";
+          note.innerHTML = ""; note.appendChild(micBlockedNode());
+          return;
+        }
+        return fail("לֹא נִמְצָא מִיקְרוֹפוֹן (" + ((e && e.name) || "שְׁגִיאָה") + ").");
       }
       chunks = []; finalized = false;
       /* ספארי לא תומך ב-webm. mp4 נבדק ראשון כי הוא מה שעובד באייפון. */

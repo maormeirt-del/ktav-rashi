@@ -24,6 +24,12 @@
            box-shadow:0 2px 8px rgba(40,40,20,.08)}
   audio{width:100%;margin-top:10px}
   .hint{font-size:.8rem;color:#7c7460;margin-top:14px;text-align:center}
+  #howto{background:#fdecea;border:2px solid #e05a4e;border-radius:14px;padding:16px;margin-top:14px}
+  #howto b{display:block;font-size:1.05rem;color:#a5342a;margin-bottom:6px}
+  #howto p{font-size:.88rem;margin-bottom:8px}
+  #howto ol{margin:0 18px 10px 0;font-size:.9rem}
+  #howto li{margin-bottom:6px}
+  #howto button{margin:0}
 </style>
 </head>
 <body>
@@ -79,6 +85,49 @@ fetch("sw.js?cb=" + Date.now()).then(r => r.text()).then(t => {
 }).catch(() => { document.querySelector("#verRow .v").textContent = "לא נטען"; });
 env.appendChild(row("דפדפן", navigator.userAgent, ""));
 
+
+/* ---- מה לעשות כשההרשאה חסומה ---- */
+function howToSteps(){
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const android = /Android/.test(ua);
+  const chrome = /Chrome|CriOS|Edg/.test(ua);
+  if (iOS && standalone)
+    return ["באייפון, אפליקציה שנפתחה ממסך הבית חוסמת מיקרופון לגמרי.",
+            "פתח את הכתובת בספארי במקום ממסך הבית."];
+  if (iOS)
+    return ["הגדרות ← ספארי ← מיקרופון ← אפשר",
+            "או: בשורת הכתובת «אA» ← הגדרות אתר ← מיקרופון ← אפשר",
+            "ואז רענן את הדף."];
+  if (android)
+    return ["לחץ על סמל המנעול בשורת הכתובת ← הרשאות ← מיקרופון ← אפשר",
+            "ואז רענן את הדף."];
+  if (chrome)
+    return ["לחץ על הסמל משמאל לכתובת ← מיקרופון ← אפשר",
+            "אם אין שם מיקרופון: chrome://settings/content/microphone",
+            "ואז רענן את הדף."];
+  return ["ספארי ← הגדרות לאתר הזה ← מיקרופון ← אפשר",
+          "וגם: הגדרות המערכת ← פרטיות ואבטחה ← מיקרופון ← סמן את הדפדפן",
+          "ואז רענן את הדף."];
+}
+function showHowTo(){
+  if (document.getElementById("howto")) return;
+  const d = document.createElement("div");
+  d.id = "howto";
+  d.innerHTML = "<b>המיקרופון חסום בדפדפן</b><p>הדפדפן לא ישאל שוב מעצמו. צריך לאפשר ידנית:</p><ol>" +
+    howToSteps().map(t => "<li>" + t + "</li>").join("") + "</ol>";
+  const b = document.createElement("button");
+  b.textContent = "רענן ↻"; b.onclick = () => location.reload();
+  d.appendChild(b);
+  out.appendChild(d);
+}
+/* אם ההרשאה כבר חסומה — מציגים את ההוראות לפני שלוחצים על כלום */
+if (navigator.permissions && navigator.permissions.query) {
+  navigator.permissions.query({ name: "microphone" })
+    .then(p => { if (p.state === "denied") showHowTo(); }).catch(() => {});
+}
+
 /* ---- בדיקה חיה ---- */
 document.getElementById("go").addEventListener("click", async function () {
   this.disabled = true; out.innerHTML = "";
@@ -91,6 +140,7 @@ document.getElementById("go").addEventListener("click", async function () {
     say("ערוץ קול", tr ? (tr.label || "ללא שם") + " · " + tr.readyState : "אין ערוץ", tr ? "ok" : "bad");
   } catch (e) {
     say("קבלת מיקרופון", "נכשל — " + e.name + ": " + e.message, "bad");
+    if (e.name === "NotAllowedError" || e.name === "SecurityError") showHowTo();
     this.disabled = false; return;
   }
   let opts = {};

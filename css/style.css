@@ -782,3 +782,11 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 .rec-err:not(:empty) { background: #fdecea; border: 2px solid #e05a4e; border-radius: 12px;
   color: #a5342a; font-size: .9rem; font-weight: 600; line-height: 1.6;
   padding: 11px 13px; margin-top: 10px; text-align: center; }
+
+/* מיקרופון חסום — הוראות מותאמות למכשיר במקום שגיאה גנרית */
+.mic-blocked { text-align: right; }
+.mic-blocked b { display: block; font-size: 1.02rem; color: #a5342a; margin-bottom: 6px; }
+.mic-blocked p { font-size: .86rem; margin-bottom: 8px; font-weight: 600; }
+.mic-blocked ol { margin: 0 18px 10px 0; font-size: .87rem; font-weight: 500; }
+.mic-blocked li { margin-bottom: 6px; line-height: 1.6; }
+.btn.sm { padding: 9px 14px; font-size: .9rem; width: 100%; }
