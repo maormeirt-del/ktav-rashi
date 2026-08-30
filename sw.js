@@ -1,5 +1,5 @@
 /* Service Worker — אופליין מלא. אפס תלות ברשת אחרי טעינה ראשונה. */
-const CACHE = "rashi-v40";
+const CACHE = "rashi-v41";
 const ASSETS = [
   "./", "./index.html", "./mic.html", "./manifest.json",
   "./css/style.css", "./fonts/fonts.css",

@@ -283,12 +283,9 @@ window.App = (function () {
       d += " C " + xs(i - 1) + " " + cy + ", " + xs(i) + " " + cy + ", " + xs(i) + " " + ys(i);
     }
     const wrap = el("div", { class: "adventure", style: "height:" + H + "px" });
-    /* אווירה — בדיוק כמו ב"אותיות של אור". הקהל הוא ז׳–ח׳,
-       והמפה צריכה להיראות כמו מקום שכיף להיות בו. */
+    /* רק הרקע נלקח מ"אותיות של אור". השמש, העננים, הכוכבים והעץ
+       הוסרו לבקשת מאור — הרקע המדורג לבדו נותן את התחושה. */
     wrap.innerHTML =
-      '<span class="amb amb-sun">🌞</span><span class="amb amb-c1">☁️</span>' +
-      '<span class="amb amb-c2">☁️</span><span class="amb amb-s1">⭐</span>' +
-      '<span class="amb amb-s2">✨</span><span class="amb amb-tree">🌳</span>' +
       '<svg class="path-svg" viewBox="0 0 100 ' + H + '" preserveAspectRatio="none">' +
       '<path d="' + d + '" class="path-glow"/><path d="' + d + '" class="path-line"/></svg>';
 
