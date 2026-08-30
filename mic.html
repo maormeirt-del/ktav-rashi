@@ -49,14 +49,26 @@ function row(k, v, cls){
   return d;
 }
 /* ---- סביבה ---- */
+function embeddedKind(){
+  const ua = navigator.userAgent;
+  if (/Claude\//.test(ua)) return "קְלוֹד";
+  if (/FBAN|FBAV|Instagram/.test(ua)) return "פֵייסְבּוּק/אִינְסְטַגְרַם";
+  if (/; wv\)/.test(ua)) return "אַפְלִיקַצְיָה";
+  if (/Line\/|MicroMessenger|Twitter/.test(ua)) return "אַפְלִיקַצְיָה";
+  return null;
+}
+
 const standalone = window.matchMedia("(display-mode: standalone)").matches ||
                    window.navigator.standalone === true;
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 env.appendChild(row("חיבור מאובטח", window.isSecureContext ? "כן" : "לא — חובה HTTPS",
   window.isSecureContext ? "ok" : "bad"));
-env.appendChild(row("נפתח מ", standalone ? "מסך הבית (PWA)" : "דפדפן",
-  standalone && isIOS ? "warn" : "ok"));
+const emb = embeddedKind();
+env.appendChild(row("נפתח מ",
+  emb ? "דפדפן משובץ בתוך " + emb + " ← כאן המיקרופון חסום מראש"
+      : (standalone ? "מסך הבית (PWA)" : "דפדפן רגיל"),
+  emb ? "bad" : (standalone && isIOS ? "warn" : "ok")));
 env.appendChild(row("mediaDevices", navigator.mediaDevices ? "קיים" : "חסר",
   navigator.mediaDevices ? "ok" : "bad"));
 env.appendChild(row("MediaRecorder", window.MediaRecorder ? "קיים" : "חסר",
@@ -89,6 +101,10 @@ env.appendChild(row("דפדפן", navigator.userAgent, ""));
 /* ---- מה לעשות כשההרשאה חסומה ---- */
 function howToSteps(){
   const ua = navigator.userAgent;
+  const emb = embeddedKind();
+  if (emb) return ["אַתָּה נִמְצָא בְּדַפְדְּפָן מְשֻׁבָּץ בְּתוֹךְ " + emb + ", וְשָׁם הַמִּיקְרוֹפוֹן חָסוּם מֵרֹאשׁ.",
+                   "אֵין שׁוּרַת כְּתֹבֶת וְאֵין מָה לְלַחֹץ — הַחֲסִימָה אֵינָהּ שֶׁלְּךָ לְשַׁנּוֹת.",
+                   "הַעְתֵּק אֶת הַכְּתֹבֶת וּפְתַח אוֹתָהּ בְּכְרוֹם אוֹ בְּסָפָארִי רְגִיל."];
   const iOS = /iPad|iPhone|iPod/.test(ua) ||
               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const android = /Android/.test(ua);

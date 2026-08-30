@@ -546,8 +546,21 @@ window.Riddles = (function () {
      אותה. הדבר היחיד שאפשר לעשות הוא להגיד בדיוק מה ללחוץ —
      ולכן ההוראות מותאמות למכשיר ולא גנריות.
      =========================================================== */
+  /* דפדפן משובץ (קלוד, פייסבוק, אפליקציה) חוסם מיקרופון מראש,
+     ואין שם שורת כתובת ללחוץ עליה. הוראות "לחץ על המנעול" הן
+     חסרות תועלת שם, ולכן קודם כול בודקים איפה בכלל נמצאים. */
+  function micEmbedded() {
+    const ua = navigator.userAgent;
+    if (/Claude\//.test(ua)) return "קְלוֹד";
+    if (/FBAN|FBAV|Instagram/.test(ua)) return "פֵייסְבּוּק/אִינְסְטַגְרַם";
+    if (/; wv\)/.test(ua)) return "אַפְלִיקַצְיָה";
+    return null;
+  }
   function micHowTo() {
     const ua = navigator.userAgent;
+    const emb = micEmbedded();
+    if (emb) return ["אַתָּה בְּדַפְדְּפָן מְשֻׁבָּץ בְּתוֹךְ " + emb + " — שָׁם הַמִּיקְרוֹפוֹן חָסוּם מֵרֹאשׁ.",
+                     "פְּתַח אֶת הַכְּתֹבֶת בְּכְרוֹם אוֹ בְּסָפָארִי רְגִיל."];
     const iOS = /iPad|iPhone|iPod/.test(ua) ||
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const android = /Android/.test(ua);
