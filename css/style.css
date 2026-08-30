@@ -775,3 +775,10 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 
 .rec-lead { text-align: center; font-family: var(--font-display); font-weight: 700;
   font-size: 1.02rem; color: var(--ink); margin: 16px 0 2px; }
+
+/* חיווי הקלטה חי + שורת שגיאה קבועה (לא toast שנעלם) */
+.rec-time { text-align: center; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.02rem; color: #c0392b; min-height: 24px; margin-top: 10px; }
+.rec-err:not(:empty) { background: #fdecea; border: 2px solid #e05a4e; border-radius: 12px;
+  color: #a5342a; font-size: .9rem; font-weight: 600; line-height: 1.6;
+  padding: 11px 13px; margin-top: 10px; text-align: center; }

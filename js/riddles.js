@@ -545,19 +545,33 @@ window.Riddles = (function () {
     const wrap = el("div", { class: "rec-wrap" });
     const box = el("div", { class: "rec-box" });
     const play = el("div", { class: "rec-play" });
+    const note = el("div", { class: "rec-err" });
+    const timer = el("div", { class: "rec-time" });
     const btn = el("button", { class: "btn primary big" }, ["🔴 הַתְחֵל הַקְלָטָה"]);
     const skip = el("button", { class: "btn ghost", onclick: () => finishUp(null) }, ["דַּלֵּג ←"]);
-    box.appendChild(btn); box.appendChild(play);
+    box.appendChild(btn); box.appendChild(timer); box.appendChild(note); box.appendChild(play);
     wrap.appendChild(box); wrap.appendChild(skip);
 
-    let rec = null, stream = null, chunks = [], url = null, t0 = 0, recording = false;
+    let rec = null, stream = null, chunks = [], url = null, t0 = 0;
+    let recording = false, busy = false, tick = null, finalized = false;
 
-    /* דילוג קיים תמיד — גם בלי מיקרופון וגם אחרי סירוב.
-       הלומד לא נחסם בגלל הרשאה. */
     function finishUp(m) {
+      cleanup();
       if (url) URL.revokeObjectURL(url);
-      if (stream) stream.getTracks().forEach(t => t.stop());
       onDone(m);
+    }
+    function cleanup() {
+      if (tick) { clearInterval(tick); tick = null; }
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    }
+    function fail(msg) {
+      cleanup(); recording = false; busy = false;
+      btn.classList.remove("recording");
+      btn.textContent = "🔴 נַסֵּה שׁוּב";
+      timer.textContent = "";
+      /* שורה קבועה על המסך, לא רק toast חולף: אם ההודעה נעלמת
+         הלומד רואה "לחצתי ולא קרה כלום" ולא מבין למה. */
+      note.textContent = msg;
     }
     if (!canRecord()) {
       btn.disabled = true; btn.textContent = "🎙️ אֵין הַקְלָטָה בַּדַּפְדְּפָן הַזֶּה";
@@ -565,43 +579,72 @@ window.Riddles = (function () {
       return wrap;
     }
 
-    btn.addEventListener("click", () => recording ? stop() : start());
+    btn.addEventListener("click", () => {
+      if (busy) return;                    // מונע לחיצה כפולה בזמן בקשת ההרשאה
+      recording ? stop() : start();
+    });
 
     async function start() {
+      busy = true; note.textContent = ""; play.innerHTML = "";
+      btn.textContent = "מְבַקֵּשׁ גִּישָׁה לַמִּיקְרוֹפוֹן…";
       try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-      catch (e) { return UI.toast("אֵין גִּישָׁה לְמִיקְרוֹפוֹן"); }
-      chunks = [];
-      /* בחירת פורמט: ספארי לא תומך ב-webm, ולכן ננסה כמה ונפול לברירת המחדל */
+      catch (e) {
+        return fail(e && e.name === "NotAllowedError"
+          ? "הַגִּישָׁה לַמִּיקְרוֹפוֹן נֶחְסְמָה. אַפְשֵׁר אוֹתָהּ בְּהַגְדָּרוֹת הַדַּפְדְּפָן."
+          : "לֹא נִמְצָא מִיקְרוֹפוֹן (" + ((e && e.name) || "שְׁגִיאָה") + ").");
+      }
+      chunks = []; finalized = false;
+      /* ספארי לא תומך ב-webm. mp4 נבדק ראשון כי הוא מה שעובד באייפון. */
       let opts = {};
-      if (MediaRecorder.isTypeSupported) {
-        const t = ["audio/webm", "audio/mp4", "audio/ogg"].find(x => MediaRecorder.isTypeSupported(x));
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported) {
+        const t = ["audio/mp4", "audio/webm", "audio/ogg"].find(x => MediaRecorder.isTypeSupported(x));
         if (t) opts = { mimeType: t };
       }
       try { rec = new MediaRecorder(stream, opts); }
-      catch (e) { try { rec = new MediaRecorder(stream); } catch (e2) { return UI.toast("לֹא נִתָּן לְהַקְלִיט כָּאן"); } }
-      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-      rec.onstop = done;
-      rec.start();
-      recording = true; t0 = performance.now();
+      catch (e) { try { rec = new MediaRecorder(stream); } catch (e2) { return fail("הַדַּפְדְּפָן לֹא מְאַפְשֵׁר הַקְלָטָה כָּאן."); } }
+
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size) chunks.push(e.data);
+        /* מסיימים על פרוסת הנתונים האחרונה ולא על onstop:
+           בספארי onstop יורה לפעמים לפני שהנתונים הגיעו, והקובץ יוצא ריק. */
+        if (!recording && !finalized) { finalized = true; done(); }
+      };
+      rec.onerror = () => fail("הַהַקְלָטָה נִכְשְׁלָה. נַסֵּה שׁוּב.");
+      rec.onstop = () => {
+        /* רשת ביטחון: אם לא הגיעה פרוסה אחרונה תוך חצי שנייה, מסיימים בכל זאת */
+        setTimeout(() => { if (!finalized) { finalized = true; done(); } }, 500);
+      };
+      rec.start(500);                       // פרוסות של חצי שנייה — הנתונים נצברים תוך כדי
+      recording = true; busy = false; t0 = performance.now();
       btn.textContent = "⏹️ עֲצֹר";
       btn.classList.add("recording");
-      play.innerHTML = "";
+      tick = setInterval(() => {
+        timer.textContent = "🔴 מַקְלִיט · " + ((performance.now() - t0) / 1000).toFixed(1) + " שְׁנִיּוֹת";
+      }, 100);
     }
-    function stop() { try { rec.stop(); } catch (e) {} }
+
+    function stop() {
+      if (!rec || !recording) return;
+      recording = false;
+      if (tick) { clearInterval(tick); tick = null; }
+      try { rec.requestData && rec.requestData(); } catch (e) {}
+      try { rec.stop(); } catch (e) { fail("לֹא נִתָּן לַעֲצֹר אֶת הַהַקְלָטָה."); }
+    }
+
     function done() {
       const secs = (performance.now() - t0) / 1000;
-      recording = false;
-      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      cleanup();
       btn.textContent = "🔴 הַקְלֵט שׁוּב";
       btn.classList.remove("recording");
+      timer.textContent = "";
       const blob = new Blob(chunks, { type: (chunks[0] && chunks[0].type) || "audio/webm" });
-      if (!blob.size) return UI.toast("הַהַקְלָטָה לֹא נִקְלְטָה, נַסֵּה שׁוּב 🎙️");
+      if (!blob.size) return fail("הַהַקְלָטָה יָצְאָה רֵיקָה. בְּדֹק שֶׁהַמִּיקְרוֹפוֹן לֹא מֻשְׁתָּק וְנַסֵּה שׁוּב.");
+      note.textContent = "";
       if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(blob);
       const wpm = secs > 0 ? Math.round(words / (secs / 60)) : 0;
       play.innerHTML = "";
       play.appendChild(el("audio", { controls: "", src: url }));
-      /* המדד הוא המשוב. לנער בן 15 מספר שאפשר לשפר עדיף על "נשמעת נהדר" */
       play.appendChild(el("div", { class: "rec-stat" }, [
         el("b", {}, [wpm + " מִלִּים לְדַקָּה"]),
         el("span", {}, [secs.toFixed(1) + " שְׁנִיּוֹת · " + words + " מִלִּים"])
