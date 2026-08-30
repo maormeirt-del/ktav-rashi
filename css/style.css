@@ -723,3 +723,7 @@ h1, h2, h3, .map-title, .rank b, .world-hero h2, .wn-info b, .game-title, .done-
 
 /* פרק נעול בבית המדרש — נפתח בסיום עולם, לא בקנייה */
 .lib-tab.locked { opacity: .5; }
+
+
+/* שני מטבעות נפרדים בהידר: 📖 קריאה (פותח ספרים) · ✦ נקודות (דרגה) */
+.chip.read { background: hsla(42,80%,55%,.22); color: var(--ink); font-weight: 800; }

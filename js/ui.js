@@ -98,9 +98,14 @@ window.UI = (function () {
         el("div", {}, [ el("b", {}, [r.name]), bar,
           n ? el("small", {}, [`${n.min - p.points} נק׳ לְ${n.name}`]) : el("small", {}, ["הַדַּרְגָּה הָעֶלְיוֹנָה!"]) ])
       ]),
+      /* שני מטבעות, ושניהם גלויים. ✦ נצבר מהכל וקובע דרגה;
+         📖 נצבר רק מקריאה ופותח את בית המדרש. אם התלמיד לא רואה
+         את ההבדל, הוא לא מבין למה 2048 לא מקרב אותו לגמרא. */
       el("div", { class: "stats" }, [
         el("span", { class: "chip" }, ["🔥 " + p.streak.count]),
-        el("span", { class: "chip pts" }, ["✦ " + p.points])
+        el("span", { class: "chip read", title: "נְקֻדּוֹת קְרִיאָה — פּוֹתְחוֹת אֶת בֵּית הַמִּדְרָשׁ" },
+          ["📖 " + (p.readPoints || 0)]),
+        el("span", { class: "chip pts", title: "נְקֻדּוֹת — קוֹבְעוֹת אֶת הַדַּרְגָּה" }, ["✦ " + p.points])
       ])
     ]);
   }
